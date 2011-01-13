@@ -11,7 +11,7 @@ import Test.QuickCheck
 import Control.Monad
 
 ----------------------------------------------------
--- instances and graph functions for TriplesGraph --
+-- * instances and graph functions for TriplesGraph
 ----------------------------------------------------
 
 instance Arbitrary TriplesGraph where
@@ -31,7 +31,7 @@ _triplesOf :: TriplesGraph -> Triples
 _triplesOf = triplesOf
 
 ----------------------------------------------------
---  generic tests parameterized for TriplesGraph  --
+-- * generic tests parameterized for TriplesGraph
 ----------------------------------------------------
 
 prop_tg_empty :: Bool

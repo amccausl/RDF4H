@@ -8,7 +8,7 @@ import Control.Monad
 import Test.QuickCheck
 
 ----------------------------------------------------
---   instances and graph functions for MGraph   --
+-- * instances and graph functions for MGraph
 ----------------------------------------------------
 
 instance Arbitrary MGraph where
@@ -28,7 +28,7 @@ _triplesOf :: MGraph -> Triples
 _triplesOf = triplesOf
 
 ----------------------------------------------------
---    generic tests parameterized for MGraph    --
+-- * generic tests parameterized for MGraph
 ----------------------------------------------------
 
 prop_mg_empty :: Bool
