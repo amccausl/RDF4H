@@ -17,8 +17,6 @@ import Text.RDF.RDF4H.Namespace
 
 import qualified Data.Map as Map
 
-import Data.List
-
 -- |A simple implementation of the 'Graph' type class that represents
 -- the graph internally as a list of triples.
 --

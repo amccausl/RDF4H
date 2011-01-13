@@ -18,8 +18,6 @@ import System.IO
 import Data.IORef
 import System.IO.Unsafe(unsafePerformIO)
 
-import Control.Monad
-
 
 bs_newline = B.pack "\n"
 

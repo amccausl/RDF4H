@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 -- |A parser for RDF in N-Triples format 
 -- <http://www.w3.org/TR/rdf-testcases/#ntriples>.
 
@@ -10,7 +11,6 @@ where
 -- TODO: switch to OverloadedStrings and use ByteString literals (?).
 
 import Text.RDF.RDF4H.Core
-import Text.RDF.RDF4H.Namespace
 import Text.RDF.RDF4H.ParserUtils
 
 import Data.Char(isLetter, isDigit, isLower)

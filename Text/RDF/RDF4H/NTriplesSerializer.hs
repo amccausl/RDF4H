@@ -15,7 +15,6 @@ import qualified Data.ByteString.Lazy.Char8 as B
 import qualified Data.ByteString.Lazy as BL
 
 import System.IO
-import Control.Monad
 
 
 data NTriplesSerializer = NTriplesSerializer

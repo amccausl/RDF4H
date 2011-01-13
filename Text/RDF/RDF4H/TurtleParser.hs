@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 -- |An 'RdfParser' implementation for the Turtle format 
 -- <http://www.w3.org/TeamSubmission/turtle/>.
 

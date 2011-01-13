@@ -4,7 +4,6 @@ import Text.RDF.RDF4H.Core
 
 import Network.URI
 import Network.HTTP
-import Network.HTTP.Headers
 
 import Data.Char(intToDigit)
 import Data.ByteString.Lazy.Char8(ByteString)

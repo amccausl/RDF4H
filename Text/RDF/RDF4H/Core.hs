@@ -1,4 +1,4 @@
-{- LANGUAGE EmptyDataDecls -}
+{-# LANGUAGE RankNTypes, MultiParamTypeClasses #-}
 
 -- |The Core module provides the fundamental types, type classes, and functions 
 -- of the library.

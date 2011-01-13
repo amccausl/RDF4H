@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 -- |This module re-exports most of the other modules of this library and also
 -- defines some convenience methods for interactive experimentation, such as
 -- simplified functions for parsing and serializing RDF, etc.
