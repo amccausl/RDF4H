@@ -10,7 +10,7 @@ where
 
 -- TODO: switch to OverloadedStrings and use ByteString literals (?).
 
-import Text.RDF.RDF4H.Core
+import Data.RDF
 import Text.RDF.RDF4H.ParserUtils
 
 import Data.Char(isLetter, isDigit, isLower)

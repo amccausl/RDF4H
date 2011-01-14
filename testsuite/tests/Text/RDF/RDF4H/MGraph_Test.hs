@@ -1,5 +1,5 @@
-import Text.RDF.RDF4H.Core
-import Text.RDF.RDF4H.Namespace
+import Data.RDF
+import Data.RDF.Namespace
 import Text.RDF.RDF4H.MGraph
 import Text.RDF.RDF4H.GraphTestUtils
 

@@ -4,8 +4,8 @@ module Text.RDF.RDF4H.MGraph(MGraph, empty, mkGraph, triplesOf, select, query)
 
 where
 
-import Text.RDF.RDF4H.Core
-import Text.RDF.RDF4H.Namespace
+import Data.RDF
+import Data.RDF.Namespace
 
 import Data.Map(Map)
 import qualified Data.Map as Map

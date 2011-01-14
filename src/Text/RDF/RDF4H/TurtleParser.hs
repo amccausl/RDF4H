@@ -8,8 +8,8 @@ module Text.RDF.RDF4H.TurtleParser(
 
 where
 
-import Text.RDF.RDF4H.Core
-import Text.RDF.RDF4H.Namespace
+import Data.RDF
+import Data.RDF.Namespace
 import Text.RDF.RDF4H.ParserUtils
 
 import Text.Parsec

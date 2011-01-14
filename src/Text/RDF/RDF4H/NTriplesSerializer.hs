@@ -7,8 +7,8 @@ module Text.RDF.RDF4H.NTriplesSerializer(
   NTriplesSerializer(NTriplesSerializer)
 ) where
 
-import Text.RDF.RDF4H.Core
-import Text.RDF.RDF4H.Utils
+import Data.RDF
+import Data.RDF.Utils
 
 import Data.ByteString.Lazy.Char8(ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B

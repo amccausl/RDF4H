@@ -4,7 +4,7 @@
 -- of the library.
 --
 
-module Text.RDF.RDF4H.Core (
+module Data.RDF (
   -- * Parsing RDF
   RdfParser(parseString, parseFile, parseURL),
   -- * Serializing RDF
@@ -28,11 +28,10 @@ module Text.RDF.RDF4H.Core (
   s2b,b2s,unode,bnode,lnode,plainL,plainLL,typedL,
   View, view,
   fromEither, maybeHead, removeDupes
-)
-where
+) where
 
-import Text.RDF.RDF4H.Namespace
-import Text.RDF.RDF4H.Utils
+import Data.RDF.Namespace
+import Data.RDF.Utils
 
 import Data.ByteString.Lazy.Char8(ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B

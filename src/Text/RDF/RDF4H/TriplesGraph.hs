@@ -12,8 +12,8 @@ module Text.RDF.RDF4H.TriplesGraph(TriplesGraph, empty, mkGraph, triplesOf, sele
 
 where
 
-import Text.RDF.RDF4H.Core
-import Text.RDF.RDF4H.Namespace
+import Data.RDF
+import Data.RDF.Namespace
 
 import qualified Data.Map as Map
 

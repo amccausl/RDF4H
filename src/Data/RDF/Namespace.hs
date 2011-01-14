@@ -2,7 +2,7 @@
 -- some predefined values for commonly used namespaces, such as
 -- rdf, xsd, dublin core, etc.
 
-module Text.RDF.RDF4H.Namespace(
+module Data.RDF.Namespace(
   -- * Namespace types and functions
   Namespace, mkPlainNS, mkPrefixedNS, mkPrefixedNS',
   PrefixMapping(PrefixMapping), PrefixMappings(PrefixMappings), toPMList,
@@ -14,7 +14,7 @@ module Text.RDF.RDF4H.Namespace(
 )
 where
 
-import Text.RDF.RDF4H.Utils
+import Data.RDF.Utils
 
 import Text.Printf
 import Data.Map(Map)

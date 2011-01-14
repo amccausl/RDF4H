@@ -18,8 +18,8 @@ module Text.RDF.RDF4H.Interact where
 import Data.ByteString.Lazy.Char8(ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
 
-import Text.RDF.RDF4H.Core
-import Text.RDF.RDF4H.Utils()
+import Data.RDF
+import Data.RDF.Utils()
 import Text.RDF.RDF4H.TriplesGraph()
 import Text.RDF.RDF4H.MGraph()
 import Text.RDF.RDF4H.NTriplesParser

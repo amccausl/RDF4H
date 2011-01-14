@@ -7,9 +7,9 @@ module Text.RDF.RDF4H.TurtleSerializer(
 
 where
 
-import Text.RDF.RDF4H.Core
-import Text.RDF.RDF4H.Namespace
-import Text.RDF.RDF4H.Utils
+import Data.RDF
+import Data.RDF.Namespace
+import Data.RDF.Utils
 
 import Data.ByteString.Lazy.Char8(ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B

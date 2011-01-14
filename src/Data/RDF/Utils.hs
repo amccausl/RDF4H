@@ -1,5 +1,5 @@
 {-#  OPTIONS_GHC -fno-cse  #-}
-module Text.RDF.RDF4H.Utils (
+module Data.RDF.Utils (
   FastString(uniq, value),
   mkFastString, equalFS, compareFS,
   s2b, b2s, hPutStrRev, hPutStrLnRev,

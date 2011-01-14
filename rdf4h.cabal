@@ -1,5 +1,5 @@
 name:            rdf4h
-version:         0.7.1
+version:         0.8.0
 synopsis:        A library for RDF processing in Haskell.
 description:     
   rdf4h is an early-stage RDF library for Haskell. It
@@ -35,8 +35,8 @@ flag hpc
   default:     True
 
 library
-  exposed-modules: Text.RDF.RDF4H.Core
-                 , Text.RDF.RDF4H.Namespace
+  exposed-modules: Data.RDF
+                 , Data.RDF.Namespace
                  , Text.RDF.RDF4H.MGraph
                  , Text.RDF.RDF4H.TriplesGraph
                  , Text.RDF.RDF4H.NTriplesParser
@@ -50,7 +50,7 @@ library
   build-depends:   parsec >= 3 && < 3.2
                  , network >= 2.2.0.0 && < 2.3
                  , HTTP >= 4000.0.0 && < 4000.2
-  other-modules:   Text.RDF.RDF4H.Utils
+  other-modules:   Data.RDF.Utils
                  , Text.RDF.RDF4H.ParserUtils
                  , Text.RDF.RDF4H.Interact
   hs-source-dirs:  src
@@ -95,8 +95,8 @@ executable test-rdf4h
                  , test-framework-hunit >= 0.2.3 && < 0.3
                  , QuickCheck >= 1.2.0.0 && < 1.3
                  , HUnit >= 1.2.2.1 && < 1.3
-    other-modules: Text.RDF.RDF4H.Core
-                 , Text.RDF.RDF4H.Namespace
+    other-modules: Data.RDF
+                 , Data.RDF.Namespace
                  , Text.RDF.RDF4H.MGraph
                  , Text.RDF.RDF4H.TriplesGraph
                  , Text.RDF.RDF4H.NTriplesParser
