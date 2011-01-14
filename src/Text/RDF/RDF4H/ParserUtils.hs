@@ -11,7 +11,7 @@ import qualified Data.ByteString.Lazy.Char8 as B
 
 -- A convenience function for terminating a parse with a parse failure, using
 -- the given error message as the message for the failure.
-errResult :: Graph gr => String -> Either ParseFailure gr
+errResult :: RDF rdf => String -> Either ParseFailure rdf
 errResult msg = Left (ParseFailure msg)
 
 -- Keep the (Just t) triples (eliminating the Nothing comments), and unbox the
@@ -20,7 +20,7 @@ justTriples :: [Maybe(Triple)] -> [Triple]
 justTriples = map (maybe (error "ParserUtils.justTriples") id) .
               filter (/= Nothing)
 
-_parseURL :: Graph gr => (ByteString -> Either ParseFailure gr)  -> String -> IO (Either ParseFailure gr)
+_parseURL :: RDF rdf => (ByteString -> Either ParseFailure rdf) -> String -> IO (Either ParseFailure rdf)
 _parseURL parseFunc url =
   return (parseURI url) >>=
     maybe (return (Left (ParseFailure $ "Unable to parse URL: " ++ url))) p

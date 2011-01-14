@@ -11,8 +11,7 @@ module Data.RDF.Namespace(
   prefixOf, uriOf,
   -- * Predefined namespace values
   rdf, rdfs, dc, dct, owl, xsd, skos, foaf, ex, ex2, standard_ns_mappings
-)
-where
+) where
 
 import Data.RDF.Utils
 

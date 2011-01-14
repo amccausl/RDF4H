@@ -1,7 +1,6 @@
 {-# LANGUAGE RankNTypes, MultiParamTypeClasses #-}
 
--- |The Core module provides the fundamental types, type classes, and functions 
--- of the library.
+-- |The RDF module provides shared semantic types, constructors and tests shared by other libraries.
 --
 
 module Data.RDF (
@@ -10,7 +9,8 @@ module Data.RDF (
   -- * Serializing RDF
   RdfSerializer(hWriteG, writeG, hWriteH, writeH, hWriteTs, writeTs, hWriteT, writeT, hWriteN, writeN),
   -- * RDF graph 
-  Graph(empty, mkGraph, triplesOf, select, query, baseUrl, prefixMappings, addPrefixMappings),
+  RDF(empty, mkRdf, triplesOf, select, query, baseUrl, prefixMappings, addPrefixMappings),
+  Semantic(..),
   -- * RDF triples, nodes, and literals
   Triple(Triple), triple, Triples, sortTriples,
   Node(UNode, BNode, BNodeGen, LNode),
@@ -55,36 +55,44 @@ type Predicate = Node
 type Object = Node
 
 -- |An RDF graph is a set of (unique) RDF triples, together with the
--- operations defined upon the graph.
+-- operations defined upon the graph.  A minimal implementation includes
+-- at least one of each of:
+--   prefixMappings
+--   addPrefixMappings
+--   mkRdf
+--   triplesOf, select or query
 --
 -- For information about the efficiency of the functions, see the
 -- documentation for the particular graph instance.
 --
 -- For more information about the concept of an RDF graph, see
 -- the following: <http://www.w3.org/TR/rdf-concepts/#section-rdf-graph>.
-class Graph gr where
+class RDF rdf where
 
   -- |Return the base URL of this graph, if any.
-  baseUrl :: gr -> Maybe BaseUrl
+  baseUrl :: rdf -> Maybe BaseUrl
+  baseUrl _ = Nothing
 
   -- |Return the prefix mappings defined for this graph, if any.
-  prefixMappings :: gr -> PrefixMappings
+  prefixMappings :: rdf -> PrefixMappings
 
   -- |Return a graph with the specified prefix mappings merged with
   -- the existing mappings. If the Bool arg is True, then a new mapping
   -- for an existing prefix will replace the old mapping; otherwise,
   -- the new mapping is ignored.
-  addPrefixMappings :: gr -> PrefixMappings -> Bool -> gr
+  addPrefixMappings :: rdf -> PrefixMappings -> Bool -> rdf
 
-  -- |Return an empty graph.
-  empty  :: gr
+  -- |Return an empty RDF graph.
+  empty :: rdf
+--  empty = mkRdf [] Nothing (PrefixMappings Map.Empty)
 
   -- |Return a graph containing all the given triples. Handling of duplicates
   -- in the input depend on the particular graph implementation.
-  mkGraph :: Triples -> Maybe BaseUrl -> PrefixMappings -> gr
+  mkRdf :: Triples -> Maybe BaseUrl -> PrefixMappings -> rdf
 
   -- |Return all triples in the graph, as a list.
-  triplesOf :: gr -> Triples
+  triplesOf :: rdf -> Triples
+  triplesOf rdf = query rdf Nothing Nothing Nothing
 
   -- |Select the triples in the graph that match the given selectors.
   --
@@ -106,7 +114,16 @@ class Graph gr where
   --
   -- Note: this function may be very slow; see the documentation for the
   -- particular graph implementation for more information.
-  select    :: gr -> NodeSelector -> NodeSelector -> NodeSelector -> Triples
+  select    :: rdf -> NodeSelector -> NodeSelector -> NodeSelector -> Triples
+  select rdf funcS funcP funcO = filter (select' funcS funcP funcO) (triplesOf rdf)
+    where select' (Just fS) (Just fP) (Just fO) = \(Triple s p o) -> (fS s) && (fP p) && (fO o)
+          select' (Just fS) (Just fP)  Nothing  = \(Triple s p _) -> (fS s) && (fP p)
+          select' (Just fS)  Nothing  (Just fO) = \(Triple s _ o) -> (fS s) && (fO o)
+          select' (Just fS)  Nothing   Nothing  = \(Triple s _ _) -> (fS s)
+          select'  Nothing  (Just fP) (Just fO) = \(Triple _ p o) -> (fP p) && (fO o)
+          select'  Nothing  (Just fP)  Nothing  = \(Triple _ p _) -> (fP p)
+          select'  Nothing   Nothing  (Just fO) = \(Triple _ _ o) -> (fO o)
+          select'  Nothing   Nothing   Nothing  = \(Triple _ _ _) -> True
 
   -- |Return the triples in the graph that match the given pattern, where
   -- the pattern (3 Maybe Node parameters) is interpreted as a triple pattern.
@@ -119,7 +136,10 @@ class Graph gr where
   -- For example, @ query gr (Just n1) Nothing (Just n2) @ would return all
   -- and only the triples that have @n1@ as subject and @n2@ as object,
   -- regardless of the predicate of the triple.
-  query         :: gr -> Maybe Node -> Maybe Node -> Maybe Node -> Triples
+  query         :: rdf -> Maybe Subject -> Maybe Predicate -> Maybe Object -> Triples
+  query rdf s p o = select rdf (toNodeSelector s) (toNodeSelector p) (toNodeSelector o)
+    where toNodeSelector Nothing = Nothing
+          toNodeSelector (Just node) = Just (\x -> x == node)
 
 -- |An RdfParser is a parser that knows how to parse 1 format of RDF and
 -- can parse an RDF document of that type from a string, a file, or a URL.
@@ -128,34 +148,34 @@ class RdfParser p where
 
   -- |Parse RDF from the given bytestring, yielding a failure with error message or
   -- the resultant graph.
-  parseString :: forall gr. (Graph gr) => p -> ByteString -> (Either ParseFailure gr)
+  parseString :: forall rdf. (RDF rdf) => p -> ByteString -> (Either ParseFailure rdf)
 
   -- |Parse RDF from the local file with the given path, yielding a failure with error
   -- message or the resultant graph in the IO monad.
-  parseFile   :: forall gr. (Graph gr) => p -> String     -> IO (Either ParseFailure gr)
+  parseFile   :: forall rdf. (RDF rdf) => p -> String     -> IO (Either ParseFailure rdf)
 
   -- |Parse RDF from the remote file with the given HTTP URL (https is not supported),
   -- yielding a failure with error message or the resultant graph in the IO monad.
-  parseURL    :: forall gr. (Graph gr) => p -> String     -> IO (Either ParseFailure gr)
+  parseURL    :: forall rdf. (RDF rdf) => p -> String     -> IO (Either ParseFailure rdf)
 
 -- |An RdfSerializer is a serializer of RDF to some particular output format, such as
 -- NTriples or Turtle.
 class RdfSerializer s where
   -- |Write the graph to a file handle using whatever configuration is specified by
   -- the first argument.
-  hWriteG     :: forall gr. (Graph gr) => s -> Handle -> gr -> IO ()
+  hWriteG     :: forall rdf. (RDF rdf) => s -> Handle -> rdf -> IO ()
 
   -- |Write the graph to stdout; equivalent to @'hWriteG' stdout@.
-  writeG      :: forall gr. (Graph gr) => s -> gr -> IO ()
+  writeG      :: forall rdf. (RDF rdf) => s -> rdf -> IO ()
 
   -- |Write to the file handle whatever header information is required based on
   -- the output format. For example, if serializing to Turtle, this method would
   -- write the necessary \@prefix declarations and possibly a \@baseUrl declaration,
   -- whereas for NTriples, there is no header section at all, so this would be a no-op.
-  hWriteH     :: forall gr. (Graph gr) => s -> Handle -> gr -> IO ()
+  hWriteH     :: forall rdf. (RDF rdf) => s -> Handle -> rdf -> IO ()
 
   -- |Write header information to stdout; equivalent to @'hWriteH' stdout@.
-  writeH      :: forall gr. (Graph gr) => s -> gr -> IO ()
+  writeH      :: forall rdf. (RDF rdf) => s -> rdf -> IO ()
 
   -- |Write some triples to a file handle using whatever configuration is specified
   -- by the first argument. 
@@ -183,6 +203,9 @@ class RdfSerializer s where
 
   -- |Write a single node to sdout; equivalent to @'hWriteN' stdout@.
   writeN      :: s -> Node    -> IO ()
+
+class Semantic t where
+  fromSemantic :: (RDF rdf) => t -> rdf
 
 -- |An RDF node, which may be either a URIRef node ('UNode'), a blank
 -- node ('BNode'), or a literal node ('LNode').
@@ -475,11 +498,11 @@ equalObjects (Triple _ _ o1) (Triple _ _ o2) = o1 == o2
 
 -- |Convert a parse result into a graph if it was successful
 -- and error and terminate if not.
-fromEither :: Graph gr => Either ParseFailure gr -> gr
+fromEither :: RDF rdf => Either ParseFailure rdf -> rdf
 fromEither res =
   case res of
     (Left err) -> error (show err)
-    (Right gr) -> gr
+    (Right rdf) -> rdf
 
 -- |Remove duplicate triples, returning unique triples. This 
 -- function may return the triples in a different order than 

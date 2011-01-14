@@ -8,16 +8,21 @@
 -- functions of this graph (select, query) remove duplicates from their
 -- result triples (but triplesOf does not) since it is usually cheap
 -- to do so.
-module Text.RDF.RDF4H.TriplesGraph(TriplesGraph, empty, mkGraph, triplesOf, select, query)
-
-where
+module Text.RDF.RDF4H.TriplesGraph (
+  TriplesGraph,
+  empty,
+  mkRdf,
+  triplesOf,
+  select,
+  query
+) where
 
 import Data.RDF
 import Data.RDF.Namespace
 
 import qualified Data.Map as Map
 
--- |A simple implementation of the 'Graph' type class that represents
+-- |A simple implementation of the 'RDF' type class that represents
 -- the graph internally as a list of triples.
 --
 -- Note that this type of graph is fine for interactive
@@ -29,7 +34,7 @@ import qualified Data.Map as Map
 --
 --  * 'empty'    : O(1)
 --
---  * 'mkGraph'  : O(n)
+--  * 'mkRdf'    : O(n)
 --
 --  * 'triplesOf': O(1)
 --
@@ -38,12 +43,12 @@ import qualified Data.Map as Map
 --  * 'query'    : O(n)
 newtype TriplesGraph = TriplesGraph (Triples, Maybe BaseUrl, PrefixMappings)
 
-instance Graph TriplesGraph where
+instance RDF TriplesGraph where
   baseUrl           = baseUrl'
   prefixMappings    = prefixMappings'
   addPrefixMappings = addPrefixMappings'
   empty             = empty'
-  mkGraph           = mkGraph'
+  mkRdf             = mkRdf'
   triplesOf         = triplesOf'
   select            = select'
   query             = query'
@@ -66,8 +71,8 @@ empty' = TriplesGraph ([], Nothing, PrefixMappings Map.empty)
 -- necessary (raptor does not seem to remove dupes either). Instead, we remove dupes
 -- from the results of the select' and query' functions, since it is cheap to do
 -- there in most cases, but not when triplesOf' is called.
-mkGraph' :: Triples -> Maybe BaseUrl -> PrefixMappings -> TriplesGraph
-mkGraph' ts baseUrl pms = TriplesGraph (ts, baseUrl, pms)
+mkRdf' :: Triples -> Maybe BaseUrl -> PrefixMappings -> TriplesGraph
+mkRdf' ts baseUrl pms = TriplesGraph (ts, baseUrl, pms)
 
 triplesOf' :: TriplesGraph -> Triples
 triplesOf' (TriplesGraph (ts, _, _)) = ts

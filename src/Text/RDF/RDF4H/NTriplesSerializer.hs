@@ -31,7 +31,7 @@ instance RdfSerializer NTriplesSerializer where
   hWriteN  _    = writeNode
   writeN   _    = writeNode stdout
 
-writeGraph :: Graph gr => Handle -> gr -> IO ()
+writeGraph :: RDF rdf => Handle -> rdf -> IO ()
 writeGraph h = writeTriples h . triplesOf
 
 writeTriples :: Handle -> Triples -> IO ()

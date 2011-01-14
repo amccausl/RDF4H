@@ -4,9 +4,7 @@
 
 module Text.RDF.RDF4H.NTriplesParser(
   NTriplesParser(NTriplesParser), ParseFailure
-)
-
-where
+) where
 
 -- TODO: switch to OverloadedStrings and use ByteString literals (?).
 
@@ -203,24 +201,24 @@ b_quote = B.singleton '"'
 between_chars :: Char -> Char -> GenParser ByteString () ByteString -> GenParser ByteString () ByteString
 between_chars start end parser = char start >> parser >>= \res -> char end >> return res
 
-parseString' :: forall gr. (Graph gr) => ByteString -> Either ParseFailure gr
-parseString' bs = handleParse mkGraph (runParser nt_ntripleDoc () "" bs)
+parseString' :: forall rdf. (RDF rdf) => ByteString -> Either ParseFailure rdf
+parseString' bs = handleParse mkRdf (runParser nt_ntripleDoc () "" bs)
 
-parseURL' :: forall gr. (Graph gr) => String -> IO (Either ParseFailure gr)
+parseURL' :: forall rdf. (RDF rdf) => String -> IO (Either ParseFailure rdf)
 parseURL' url = _parseURL parseString' url
 
-parseFile' :: forall gr. (Graph gr) => String -> IO (Either ParseFailure gr)
-parseFile' path = B.readFile path >>= return . runParser nt_ntripleDoc () path >>= return . handleParse mkGraph
+parseFile' :: forall rdf. (RDF rdf) => String -> IO (Either ParseFailure rdf)
+parseFile' path = B.readFile path >>= return . runParser nt_ntripleDoc () path >>= return . handleParse mkRdf
 
-handleParse :: forall gr. (Graph gr) => (Triples -> Maybe BaseUrl -> PrefixMappings -> gr) ->
+handleParse :: forall rdf. (RDF rdf) => (Triples -> Maybe BaseUrl -> PrefixMappings -> rdf) ->
                                         Either ParseError [Maybe Triple] ->
-                                        (Either ParseFailure gr)
-handleParse _mkGraph result
+                                        (Either ParseFailure rdf)
+handleParse _mkRdf result
 --  | B.length rem /= 0 = (Left $ ParseFailure $ "Invalid Document. Unparseable end of document: " ++ B.unpack rem)
   | otherwise          = 
       case result of
         Left err -> Left  $ ParseFailure $ "Parse failure: \n" ++ show err
-        Right ts -> Right $ _mkGraph (conv ts) Nothing (PrefixMappings Map.empty)
+        Right ts -> Right $ _mkRdf (conv ts) Nothing (PrefixMappings Map.empty)
   where
     conv []            = []
     conv (Nothing:ts)  = conv ts

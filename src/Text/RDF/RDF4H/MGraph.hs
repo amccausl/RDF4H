@@ -1,8 +1,13 @@
 -- |A simple graph implementation backed by 'Data.Map'.
 
-module Text.RDF.RDF4H.MGraph(MGraph, empty, mkGraph, triplesOf, select, query)
-
-where
+module Text.RDF.RDF4H.MGraph (
+  MGraph,
+  empty,
+  mkRdf,
+  triplesOf,
+  select,
+  query
+) where
 
 import Data.RDF
 import Data.RDF.Namespace
@@ -22,7 +27,7 @@ import Data.List
 --
 --  * 'empty'    : O(1)
 --
---  * 'mkGraph'  : O(n)
+--  * 'mkRdf'    : O(n)
 --
 --  * 'triplesOf': O(n)
 --
@@ -31,12 +36,12 @@ import Data.List
 --  * 'query'    : O(log n)
 newtype MGraph = MGraph (SPOMap, Maybe BaseUrl, PrefixMappings)
 
-instance Graph MGraph where
+instance RDF MGraph where
   baseUrl           = baseUrl'
   prefixMappings    = prefixMappings'
   addPrefixMappings = addPrefixMappings'
   empty             = empty'
-  mkGraph           = mkGraph'
+  mkRdf             = mkRdf'
   triplesOf         = triplesOf'
   select            = select'
   query             = query'
@@ -65,8 +70,8 @@ addPrefixMappings' (MGraph (ts, baseUrl, pms)) pms' replace =
 empty' :: MGraph
 empty' = MGraph (Map.empty, Nothing, PrefixMappings Map.empty)
 
-mkGraph' :: Triples -> Maybe BaseUrl -> PrefixMappings -> MGraph
-mkGraph' ts baseUrl pms = MGraph ((mergeTs Map.empty ts), baseUrl, pms)
+mkRdf' :: Triples -> Maybe BaseUrl -> PrefixMappings -> MGraph
+mkRdf' ts baseUrl pms = MGraph ((mergeTs Map.empty ts), baseUrl, pms)
 
 mergeTs :: SPOMap -> [Triple] -> SPOMap
 mergeTs = foldl' mergeT

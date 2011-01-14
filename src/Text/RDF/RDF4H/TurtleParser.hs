@@ -4,9 +4,7 @@
 
 module Text.RDF.RDF4H.TurtleParser(
   TurtleParser(TurtleParser)
-)
-
-where
+) where
 
 import Data.RDF
 import Data.RDF.Namespace
@@ -556,11 +554,11 @@ addTripleForObject obj =
 -- base URI against which the relative URI is resolved.
 --p
 -- Returns either a @ParseFailure@ or a new graph containing the parsed triples.
-parseURL' :: forall gr. (Graph gr) => 
+parseURL' :: forall rdf. (RDF rdf) =>
                  Maybe BaseUrl       -- ^ The optional base URI of the document.
                  -> Maybe ByteString -- ^ The document URI (i.e., the URI of the document itself); if Nothing, use location URI.
                  -> String           -- ^ The location URI from which to retrieve the Turtle document.
-                 -> IO (Either ParseFailure gr)
+                 -> IO (Either ParseFailure rdf)
                                      -- ^ The parse result, which is either a @ParseFailure@ or the graph
                                      --   corresponding to the Turtle document.
 parseURL' bUrl docUrl locUrl = _parseURL (parseString' bUrl docUrl) locUrl
@@ -570,7 +568,7 @@ parseURL' bUrl docUrl locUrl = _parseURL (parseString' bUrl docUrl) locUrl
 -- than a location URI.
 --
 -- Returns either a @ParseFailure@ or a new graph containing the parsed triples.
-parseFile' :: forall gr. (Graph gr) => Maybe BaseUrl -> Maybe ByteString -> String -> IO (Either ParseFailure gr)
+parseFile' :: forall rdf. (RDF rdf) => Maybe BaseUrl -> Maybe ByteString -> String -> IO (Either ParseFailure rdf)
 parseFile' bUrl docUrl fpath =
   B.readFile fpath >>= \bs -> return $ handleResult bUrl (runParser t_turtleDoc initialState (maybe "" B.unpack docUrl) bs)
   where initialState = (bUrl, docUrl, 1, PrefixMappings Map.empty, [], [], [], Seq.empty)
@@ -578,15 +576,15 @@ parseFile' bUrl docUrl fpath =
 -- |Parse the given string as a Turtle document. The arguments and return type have the same semantics 
 -- as <parseURL>, except that the last @String@ argument corresponds to the Turtle document itself as
 -- a a string rather than a location URI.
-parseString' :: forall gr. (Graph gr) => Maybe BaseUrl -> Maybe ByteString -> ByteString -> Either ParseFailure gr
+parseString' :: forall rdf. (RDF rdf) => Maybe BaseUrl -> Maybe ByteString -> ByteString -> Either ParseFailure rdf
 parseString' bUrl docUrl ttlStr = handleResult bUrl (runParser t_turtleDoc initialState "" (ttlStr))
   where initialState = (bUrl, docUrl, 1, PrefixMappings Map.empty, [], [], [], Seq.empty)
 
-handleResult :: Graph gr => Maybe BaseUrl -> Either ParseError (Seq Triple, PrefixMappings) -> Either ParseFailure gr
+handleResult :: RDF rdf => Maybe BaseUrl -> Either ParseError (Seq Triple, PrefixMappings) -> Either ParseFailure rdf
 handleResult bUrl result =
   case result of
     (Left err)         -> Left (ParseFailure $ show err)
-    (Right (ts, pms))  -> Right $! mkGraph (F.toList ts) bUrl pms
+    (Right (ts, pms))  -> Right $! mkRdf (F.toList ts) bUrl pms
 
 _testParseState :: ParseState
 _testParseState = (Nothing, Nothing, 1, PrefixMappings (Map.empty), [], [], [], Seq.empty)

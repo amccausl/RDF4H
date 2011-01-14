@@ -3,9 +3,7 @@
 
 module Text.RDF.RDF4H.TurtleSerializer(
   TurtleSerializer(TurtleSerializer)
-)
-
-where
+) where
 
 import Data.RDF
 import Data.RDF.Namespace
@@ -32,9 +30,9 @@ _debug = trace
 data TurtleSerializer = TurtleSerializer (Maybe ByteString) PrefixMappings
 
 instance RdfSerializer TurtleSerializer where
-  hWriteG  (TurtleSerializer docUrl pms) h gr = writeGraph h docUrl (addPrefixMappings gr pms False)
+  hWriteG  (TurtleSerializer docUrl pms) h rdf = writeGraph h docUrl (addPrefixMappings rdf pms False)
   writeG   s = hWriteG s stdout
-  hWriteH  (TurtleSerializer _ pms) h gr = writeHeader h (baseUrl gr) (mergePrefixMappings (prefixMappings gr) pms)
+  hWriteH  (TurtleSerializer _ pms) h rdf = writeHeader h (baseUrl rdf) (mergePrefixMappings (prefixMappings rdf) pms)
   writeH   s = hWriteG s stdout
   -- TODO: should use mdUrl to render <> where appropriate
   hWriteTs (TurtleSerializer docUrl pms) h = writeTriples h docUrl pms
@@ -51,7 +49,7 @@ instance RdfSerializer TurtleSerializer where
 -- configurable somehow, so that if the user really doesn't want any extra
 -- prefix declarations added, that is possible.
 
-writeGraph :: Graph gr => Handle -> Maybe ByteString -> gr -> IO ()
+writeGraph :: RDF rdf => Handle -> Maybe ByteString -> rdf -> IO ()
 writeGraph h mdUrl gr =
   writeHeader h bUrl pms' >> writeTriples h mdUrl pms' ts >> hPutChar h '\n'
   where
