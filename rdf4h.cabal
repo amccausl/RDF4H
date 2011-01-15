@@ -43,6 +43,7 @@ library
                  , Text.RDF.RDF4H.NTriplesSerializer
                  , Text.RDF.RDF4H.TurtleParser
                  , Text.RDF.RDF4H.TurtleSerializer
+                 , Text.RDF.RDF4H.XmlParser
   if flag(small_base)
     build-depends: base >= 3, bytestring, directory, containers
   else
@@ -50,6 +51,7 @@ library
   build-depends:   parsec >= 3 && < 3.2
                  , network >= 2.2.0.0 && < 2.3
                  , HTTP >= 4000.0.0 && < 4000.2
+                 , hxt >= 9.0.0 && < 9.1
   other-modules:   Data.RDF.Utils
                  , Text.RDF.RDF4H.ParserUtils
                  , Text.RDF.RDF4H.Interact
@@ -66,6 +68,7 @@ executable rdf4h
   build-depends:   parsec >= 3 && < 3.2
                  , network >= 2.2.0.0 && < 2.3
                  , HTTP >= 4000.0.0 && < 4000.2
+                 , hxt >= 9.0.0 && < 9.1
   hs-source-dirs:  src
   extensions:      BangPatterns
   ghc-options:     -O2 -Wall -fglasgow-exts -fno-warn-name-shadowing -fno-warn-missing-signatures -fno-warn-unused-do-bind
@@ -103,4 +106,5 @@ executable test-rdf4h
                  , Text.RDF.RDF4H.NTriplesSerializer
                  , Text.RDF.RDF4H.TurtleParser
                  , Text.RDF.RDF4H.TurtleSerializer
+                 , Text.RDF.RDF4H.XmlParser
     hs-source-dirs: src, testsuite/tests
