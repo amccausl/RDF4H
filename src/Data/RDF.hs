@@ -4,8 +4,7 @@
 --
 
 module Data.RDF (
-  -- * Parsing RDF
-  RdfParser(parseString, parseFile, parseURL),
+  parseFile, parseURL,
   -- * Serializing RDF
   RdfSerializer(hWriteG, writeG, hWriteH, writeH, hWriteTs, writeTs, hWriteT, writeT, hWriteN, writeN),
   -- * RDF graph 
@@ -141,22 +140,21 @@ class RDF rdf where
     where toNodeSelector Nothing = Nothing
           toNodeSelector (Just node) = Just (\x -> x == node)
 
--- |An RdfParser is a parser that knows how to parse 1 format of RDF and
--- can parse an RDF document of that type from a string, a file, or a URL.
--- Required configuration options will vary from instance to instance.
-class RdfParser p where
+-- * Shared functions for use by parsing functions
 
-  -- |Parse RDF from the given bytestring, yielding a failure with error message or
-  -- the resultant graph.
-  parseString :: forall rdf. (RDF rdf) => p -> ByteString -> (Either ParseFailure rdf)
+parseFile :: forall rdf. (RDF rdf)
+          => (ByteString -> Either ParseFailure rdf)
+          -> FilePath
+          -> IO (Either ParseFailure rdf)
+parseFile parser file = do str <- readFile file
+                           return (parser (s2b str))
 
-  -- |Parse RDF from the local file with the given path, yielding a failure with error
-  -- message or the resultant graph in the IO monad.
-  parseFile   :: forall rdf. (RDF rdf) => p -> String     -> IO (Either ParseFailure rdf)
-
-  -- |Parse RDF from the remote file with the given HTTP URL (https is not supported),
-  -- yielding a failure with error message or the resultant graph in the IO monad.
-  parseURL    :: forall rdf. (RDF rdf) => p -> String     -> IO (Either ParseFailure rdf)
+-- TODO: use proper function
+parseURL :: forall rdf. (RDF rdf)
+         => (ByteString -> Either ParseFailure rdf)
+         -> String
+         -> IO (Either ParseFailure rdf)
+parseURL = parseFile
 
 -- |An RdfSerializer is a serializer of RDF to some particular output format, such as
 -- NTriples or Turtle.
@@ -206,6 +204,7 @@ class RdfSerializer s where
 
 class Semantic t where
   fromSemantic :: (RDF rdf) => t -> rdf
+  toSemantic :: (RDF rdf) => rdf -> t
 
 -- |An RDF node, which may be either a URIRef node ('UNode'), a blank
 -- node ('BNode'), or a literal node ('LNode').
@@ -509,3 +508,4 @@ fromEither res =
 -- given.
 removeDupes :: Triples -> Triples
 removeDupes =  map head . group . sort
+

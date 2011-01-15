@@ -3,7 +3,7 @@
 -- <http://www.w3.org/TeamSubmission/turtle/>.
 
 module Text.RDF.RDF4H.TurtleParser(
-  TurtleParser(TurtleParser)
+  parseTurtleRDF
 ) where
 
 import Data.RDF
@@ -31,21 +31,13 @@ import Debug.Trace(trace)
 -- To avoid compiler warnings when not being used.
 _trace = trace
 
--- |An 'RdfParser' implementation for parsing RDF in the 
--- Turtle format. It takes optional arguments representing the base URL to use
--- for resolving relative URLs in the document (may be overridden in the document
--- itself using the \@base directive), and the URL to use for the document itself
--- for resolving references to <> in the document.
--- To use this parser, pass a 'TurtleParser' value as the first argument to any of
--- the 'parseString', 'parseFile', or 'parseURL' methods of the 'RdfParser' type
--- class.
-data TurtleParser = TurtleParser (Maybe BaseUrl) (Maybe ByteString)
-
--- |'TurtleParser' is an instance of 'RdfParser'.
-instance RdfParser TurtleParser where
-  parseString (TurtleParser bUrl dUrl)  = parseString' bUrl dUrl 
-  parseFile   (TurtleParser bUrl dUrl)  = parseFile' bUrl dUrl
-  parseURL    (TurtleParser bUrl dUrl)  = parseURL'  bUrl dUrl
+parseTurtleRDF :: forall rdf. (RDF rdf)
+               => Maybe BaseUrl           -- ^ The base URL for the RDF if required
+               -> Maybe ByteString        -- ^ DocUrl: The request URL for the RDF if available
+               -> ByteString              -- ^ The contents to parse
+               -> Either ParseFailure rdf -- ^ The RDF representation of the triples or ParseFailure
+parseTurtleRDF bUrl dUrl ttlStr = handleResult bUrl (runParser t_turtleDoc initialState "" (ttlStr))
+  where initialState = (bUrl, dUrl, 1, PrefixMappings Map.empty, [], [], [], Seq.empty)
 
 type ParseState =
   (Maybe BaseUrl,    -- the current BaseUrl, may be Nothing initially, but not after it is once set

@@ -2,9 +2,9 @@ module Main where
 
 import Data.RDF
 import Text.RDF.RDF4H.TriplesGraph
-import Text.RDF.RDF4H.NTriplesParser
+import Text.RDF.RDF4H.NTriplesParser (parseNTriplesRDF)
+import Text.RDF.RDF4H.TurtleParser (parseTurtleRDF)
 import Text.RDF.RDF4H.NTriplesSerializer
-import Text.RDF.RDF4H.TurtleParser
 import Text.RDF.RDF4H.TurtleSerializer
 
 import Data.ByteString.Lazy.Char8(ByteString)
@@ -52,17 +52,17 @@ main =
          emptyPms   = PrefixMappings Map.empty
      case (inputFormat, isUri $ s2b inputUri) of
        -- we use TriplesGraph in all cases, since it preserves the ordering of triples
-       ("turtle",    True) -> parseURL (TurtleParser mInputUri docUri) inputUri
+       ("turtle",    True) -> parseURL (parseTurtleRDF mInputUri docUri) inputUri
                                 >>= \(res :: Either ParseFailure TriplesGraph) -> write outputFormat docUri emptyPms res
        ("turtle",   False) -> (if inputUri /= "-"
-                                  then parseFile (TurtleParser mInputUri docUri) inputUri
-                                  else B.getContents >>= return . parseString (TurtleParser mInputUri docUri))
+                                  then parseFile (parseTurtleRDF mInputUri docUri) inputUri
+                                  else B.getContents >>= return . (parseTurtleRDF mInputUri docUri))
                                 >>= \(res :: Either ParseFailure TriplesGraph) -> write outputFormat docUri emptyPms res
-       ("ntriples",  True) -> parseURL NTriplesParser inputUri
+       ("ntriples",  True) -> parseURL parseNTriplesRDF inputUri
                                 >>= \(res :: Either ParseFailure TriplesGraph) -> write outputFormat Nothing emptyPms res
        ("ntriples", False) -> (if inputUri /= "-"
-                                  then parseFile NTriplesParser inputUri
-                                  else B.getContents >>= return . parseString NTriplesParser)
+                                  then parseFile parseNTriplesRDF inputUri
+                                  else B.getContents >>= return . parseNTriplesRDF)
                                 >>= \(res :: Either ParseFailure TriplesGraph) -> write outputFormat Nothing emptyPms res
        (str     ,   _    ) -> putStrLn ("Invalid format: " ++ str) >> exitFailure
 
