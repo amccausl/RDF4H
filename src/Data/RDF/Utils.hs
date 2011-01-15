@@ -11,6 +11,7 @@ import qualified Data.ByteString.Lazy as BL
 import Data.ByteString.Lazy.Char8(ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
 
+import Data.Ord (comparing)
 import Data.Map(Map)
 import qualified Data.Map as Map
 
@@ -60,14 +61,14 @@ equalFS fs1 fs2 = uniq fs1 == uniq fs2
 -- and are otherwise ordered using the natural ordering of 'ByteString' in the
 -- internal (reversed) representation.
 instance Ord FastString where
-  compare fs1 fs2 = compareFS fs1 fs2
+  compare = compareFS
 
 {-# INLINE compareFS #-}
 compareFS :: FastString -> FastString -> Ordering
 compareFS fs1 fs2 =
-  case uniq fs1 == uniq fs2 of
-    True    ->  EQ
-    False   ->  compare (value fs1) (value fs2)
+  if uniq fs1 == uniq fs2
+      then EQ
+      else comparing value fs1 fs2
 
 -- |A convenience function for converting from a bytestring to a string.
 {-# INLINE b2s #-}

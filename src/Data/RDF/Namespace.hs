@@ -79,7 +79,7 @@ instance Show PrefixMappings where
   -- worth optimizing yet.
   show (PrefixMappings pmap) = printf "PrefixMappings [%s]" mappingsStr
     where showPM      = show . PrefixMapping
-          mappingsStr = concat $ List.intersperse ", " $ map showPM (Map.toList pmap)
+          mappingsStr = List.intercalate ", " (map showPM (Map.toList pmap))
 
 -- |Perform a left-biased merge of the two sets of prefix mappings.
 mergePrefixMappings :: PrefixMappings -> PrefixMappings -> PrefixMappings

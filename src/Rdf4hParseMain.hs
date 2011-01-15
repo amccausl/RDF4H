@@ -1,7 +1,8 @@
 module Main where
 
 import Data.RDF
-import Text.RDF.RDF4H.TriplesGraph
+import Data.RDF.TriplesGraph
+import Text.RDF.RDF4H.ParserUtils (parseFile, parseURL)
 import Text.RDF.RDF4H.NTriplesParser (parseNTriplesRDF)
 import Text.RDF.RDF4H.TurtleParser (parseTurtleRDF)
 import Text.RDF.RDF4H.NTriplesSerializer
@@ -27,9 +28,9 @@ import Text.Printf(hPrintf)
 main :: IO ()
 main =
   do (opts, args) <- (getArgs >>= compilerOpts)
-     when (elem Help opts)
+     when (Help `elem` opts)
        (putStrLn (usageInfo header options) >> exitWith ExitSuccess)
-     when (elem Version opts)
+     when (Version `elem` opts)
        (putStrLn version >> exitWith ExitSuccess)
      when (null args)
        (ioError (userError ("\n\n" ++ "INPUT-URI required\n\n" ++ usageInfo header options)))
@@ -39,7 +40,7 @@ main =
          outputFormat  = getWithDefault (OutputFormat "ntriples") opts
          inputBaseUri  = getInputBaseUri inputUri args opts
          outputBaseUri = getWithDefault (OutputBaseUri inputBaseUri) opts
-     unless (outputFormat == "ntriples" || outputFormat == "turtle")
+     unless (outputFormat `elem` ["ntriples", "turtle"])
        (hPrintf stderr ("'" ++ outputFormat ++ "' is not a valid output format. Supported output formats are: ntriples, turtle\n") >> exitWith (ExitFailure 1))
      when debug
        (hPrintf stderr "      INPUT-URI:  %s\n\n" inputUri     >>
@@ -56,13 +57,13 @@ main =
                                 >>= \(res :: Either ParseFailure TriplesGraph) -> write outputFormat docUri emptyPms res
        ("turtle",   False) -> (if inputUri /= "-"
                                   then parseFile (parseTurtleRDF mInputUri docUri) inputUri
-                                  else B.getContents >>= return . (parseTurtleRDF mInputUri docUri))
+                                  else fmap (parseTurtleRDF mInputUri docUri) B.getContents)
                                 >>= \(res :: Either ParseFailure TriplesGraph) -> write outputFormat docUri emptyPms res
        ("ntriples",  True) -> parseURL parseNTriplesRDF inputUri
                                 >>= \(res :: Either ParseFailure TriplesGraph) -> write outputFormat Nothing emptyPms res
        ("ntriples", False) -> (if inputUri /= "-"
                                   then parseFile parseNTriplesRDF inputUri
-                                  else B.getContents >>= return . parseNTriplesRDF)
+                                  else fmap parseNTriplesRDF B.getContents)
                                 >>= \(res :: Either ParseFailure TriplesGraph) -> write outputFormat Nothing emptyPms res
        (str     ,   _    ) -> putStrLn ("Invalid format: " ++ str) >> exitFailure
 
@@ -85,9 +86,9 @@ write format docUri pms res =
 -- arg is silently discarded.
 getInputBaseUri :: String -> [String] -> [Flag] -> String
 getInputBaseUri inputUri args flags =
-  case (null $ tail args) of
-    True  -> getWithDefault (InputBaseUri inputUri) flags
-    False -> getWithDefault (InputBaseUri (head $ tail args)) flags
+  if null $ tail args
+    then getWithDefault (InputBaseUri inputUri) flags
+    else getWithDefault (InputBaseUri (head $ tail args)) flags
 
 -- Determine if the bytestring represents a URI, which is currently
 -- decided solely by checking for a colon in the string.

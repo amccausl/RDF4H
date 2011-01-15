@@ -8,7 +8,7 @@
 -- functions of this graph (select, query) remove duplicates from their
 -- result triples (but triplesOf does not) since it is usually cheap
 -- to do so.
-module Text.RDF.RDF4H.TriplesGraph (
+module Data.RDF.TriplesGraph (
   TriplesGraph,
   empty,
   mkRdf,

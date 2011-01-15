@@ -8,7 +8,6 @@ module Text.RDF.RDF4H.TurtleParser(
 
 import Data.RDF
 import Data.RDF.Namespace
-import Text.RDF.RDF4H.ParserUtils
 
 import Text.Parsec
 import Text.Parsec.ByteString.Lazy
@@ -528,49 +527,6 @@ addTripleForObject obj =
      when (null ps) $
        error $ "No Predicate with which to create triple for: " ++ show obj
      setState (bUrl, dUrl, i, pms, ss, ps, cs, ts |> (Triple (head ss) (head ps) obj))
-
--- |Parse the document at the given location URL as a Turtle document, using an optional @BaseUrl@
--- as the base URI, and using the given document URL as the URI of the Turtle document itself.
---
--- The @BaseUrl@ is used as the base URI within the document for resolving any relative URI references.
--- It may be changed within the document using the @\@base@ directive. At any given point, the current
--- base URI is the most recent @\@base@ directive, or if none, the @BaseUrl@ given to @parseURL@, or 
--- if none given, the document URL given to @parseURL@. For example, if the @BaseUrl@ were
--- @http:\/\/example.org\/@ and a relative URI of @\<b>@ were encountered (with no preceding @\@base@ 
--- directive), then the relative URI would expand to @http:\/\/example.org\/b@.
---
--- The document URL is for the purpose of resolving references to 'this document' within the document,
--- and may be different than the actual location URL from which the document is retrieved. Any reference
--- to @\<>@ within the document is expanded to the value given here. Additionally, if no @BaseUrl@ is 
--- given and no @\@base@ directive has appeared before a relative URI occurs, this value is used as the
--- base URI against which the relative URI is resolved.
---p
--- Returns either a @ParseFailure@ or a new graph containing the parsed triples.
-parseURL' :: forall rdf. (RDF rdf) =>
-                 Maybe BaseUrl       -- ^ The optional base URI of the document.
-                 -> Maybe ByteString -- ^ The document URI (i.e., the URI of the document itself); if Nothing, use location URI.
-                 -> String           -- ^ The location URI from which to retrieve the Turtle document.
-                 -> IO (Either ParseFailure rdf)
-                                     -- ^ The parse result, which is either a @ParseFailure@ or the graph
-                                     --   corresponding to the Turtle document.
-parseURL' bUrl docUrl locUrl = _parseURL (parseString' bUrl docUrl) locUrl
-
--- |Parse the given file as a Turtle document. The arguments and return type have the same semantics
--- as 'parseURL', except that the last @String@ argument corresponds to a filesystem location rather
--- than a location URI.
---
--- Returns either a @ParseFailure@ or a new graph containing the parsed triples.
-parseFile' :: forall rdf. (RDF rdf) => Maybe BaseUrl -> Maybe ByteString -> String -> IO (Either ParseFailure rdf)
-parseFile' bUrl docUrl fpath =
-  B.readFile fpath >>= \bs -> return $ handleResult bUrl (runParser t_turtleDoc initialState (maybe "" B.unpack docUrl) bs)
-  where initialState = (bUrl, docUrl, 1, PrefixMappings Map.empty, [], [], [], Seq.empty)
-
--- |Parse the given string as a Turtle document. The arguments and return type have the same semantics 
--- as <parseURL>, except that the last @String@ argument corresponds to the Turtle document itself as
--- a a string rather than a location URI.
-parseString' :: forall rdf. (RDF rdf) => Maybe BaseUrl -> Maybe ByteString -> ByteString -> Either ParseFailure rdf
-parseString' bUrl docUrl ttlStr = handleResult bUrl (runParser t_turtleDoc initialState "" (ttlStr))
-  where initialState = (bUrl, docUrl, 1, PrefixMappings Map.empty, [], [], [], Seq.empty)
 
 handleResult :: RDF rdf => Maybe BaseUrl -> Either ParseError (Seq Triple, PrefixMappings) -> Either ParseFailure rdf
 handleResult bUrl result =

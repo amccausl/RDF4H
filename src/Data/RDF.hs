@@ -4,7 +4,6 @@
 --
 
 module Data.RDF (
-  parseFile, parseURL,
   -- * Serializing RDF
   RdfSerializer(hWriteG, writeG, hWriteH, writeH, hWriteTs, writeTs, hWriteT, writeT, hWriteN, writeN),
   -- * RDF graph 
@@ -35,6 +34,9 @@ import Data.RDF.Utils
 import Data.ByteString.Lazy.Char8(ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.List
+import Data.Ord (comparing)
+
+import qualified Data.Map as Map
 
 import System.IO
 
@@ -83,7 +85,7 @@ class RDF rdf where
 
   -- |Return an empty RDF graph.
   empty :: rdf
---  empty = mkRdf [] Nothing (PrefixMappings Map.Empty)
+  empty = mkRdf [] Nothing (PrefixMappings Map.empty)
 
   -- |Return a graph containing all the given triples. Handling of duplicates
   -- in the input depend on the particular graph implementation.
@@ -115,13 +117,13 @@ class RDF rdf where
   -- particular graph implementation for more information.
   select    :: rdf -> NodeSelector -> NodeSelector -> NodeSelector -> Triples
   select rdf funcS funcP funcO = filter (select' funcS funcP funcO) (triplesOf rdf)
-    where select' (Just fS) (Just fP) (Just fO) = \(Triple s p o) -> (fS s) && (fP p) && (fO o)
-          select' (Just fS) (Just fP)  Nothing  = \(Triple s p _) -> (fS s) && (fP p)
-          select' (Just fS)  Nothing  (Just fO) = \(Triple s _ o) -> (fS s) && (fO o)
-          select' (Just fS)  Nothing   Nothing  = \(Triple s _ _) -> (fS s)
-          select'  Nothing  (Just fP) (Just fO) = \(Triple _ p o) -> (fP p) && (fO o)
-          select'  Nothing  (Just fP)  Nothing  = \(Triple _ p _) -> (fP p)
-          select'  Nothing   Nothing  (Just fO) = \(Triple _ _ o) -> (fO o)
+    where select' (Just fS) (Just fP) (Just fO) = \(Triple s p o) -> fS s && fP p && fO o
+          select' (Just fS) (Just fP)  Nothing  = \(Triple s p _) -> fS s && fP p
+          select' (Just fS)  Nothing  (Just fO) = \(Triple s _ o) -> fS s && fO o
+          select' (Just fS)  Nothing   Nothing  = \(Triple s _ _) -> fS s
+          select'  Nothing  (Just fP) (Just fO) = \(Triple _ p o) -> fP p && fO o
+          select'  Nothing  (Just fP)  Nothing  = \(Triple _ p _) -> fP p
+          select'  Nothing   Nothing  (Just fO) = \(Triple _ _ o) -> fO o
           select'  Nothing   Nothing   Nothing  = \(Triple _ _ _) -> True
 
   -- |Return the triples in the graph that match the given pattern, where
@@ -138,23 +140,7 @@ class RDF rdf where
   query         :: rdf -> Maybe Subject -> Maybe Predicate -> Maybe Object -> Triples
   query rdf s p o = select rdf (toNodeSelector s) (toNodeSelector p) (toNodeSelector o)
     where toNodeSelector Nothing = Nothing
-          toNodeSelector (Just node) = Just (\x -> x == node)
-
--- * Shared functions for use by parsing functions
-
-parseFile :: forall rdf. (RDF rdf)
-          => (ByteString -> Either ParseFailure rdf)
-          -> FilePath
-          -> IO (Either ParseFailure rdf)
-parseFile parser file = do str <- readFile file
-                           return (parser (s2b str))
-
--- TODO: use proper function
-parseURL :: forall rdf. (RDF rdf)
-         => (ByteString -> Either ParseFailure rdf)
-         -> String
-         -> IO (Either ParseFailure rdf)
-parseURL = parseFile
+          toNodeSelector (Just node) = Just (== node)
 
 -- |An RdfSerializer is a serializer of RDF to some particular output format, such as
 -- NTriples or Turtle.
@@ -349,33 +335,30 @@ instance Eq Node where
 -- of '(BNodeGen 44)' and '(BNodeGen 3)' is that of the values, or
 -- 'compare 44 3', GT.
 instance Ord Node where
-  compare n1 n2 = compareNode n1 n2
-
-compareNode :: Node -> Node -> Ordering
-compareNode (UNode fs1)                      (UNode fs2)                      = compareFS fs1 fs2
-compareNode (UNode _)                        _                                = LT
-compareNode (BNode fs1)                      (BNode fs2)                      = compareFS fs1 fs2
-compareNode (BNode _)                        (UNode _)                        = GT
-compareNode (BNode _)                        _                                = LT
-compareNode (BNodeGen i1)                    (BNodeGen i2)                    = compare i1 i2
-compareNode (BNodeGen _)                     (LNode _)                        = LT
-compareNode (BNodeGen _)                     _                                = GT
-compareNode (LNode (PlainL bs1))             (LNode (PlainL bs2))             = compare bs1 bs2
-compareNode (LNode (PlainL _))               (LNode _)                        = LT
-compareNode (LNode (PlainLL bs1 bs1'))       (LNode (PlainLL bs2 bs2'))       =
-  case compare bs1' bs2' of
-    EQ -> compare bs1 bs2
-    LT -> LT
-    GT -> GT
-compareNode (LNode (PlainLL _ _))            (LNode (PlainL _))               = GT
-compareNode (LNode (PlainLL _ _))            (LNode _)                        = LT
-compareNode (LNode (TypedL bs1 fs1))         (LNode (TypedL bs2 fs2))         =
-  case compare fs1 fs2 of
-    EQ -> compare bs1 bs2
-    LT -> LT
-    GT -> GT
-compareNode (LNode (TypedL _ _))             (LNode _)                        = GT
-compareNode (LNode _)                        _                                = GT
+  compare (UNode fs1)                      (UNode fs2)                      = compareFS fs1 fs2
+  compare (UNode _)                        _                                = LT
+  compare (BNode fs1)                      (BNode fs2)                      = compareFS fs1 fs2
+  compare (BNode _)                        (UNode _)                        = GT
+  compare (BNode _)                        _                                = LT
+  compare (BNodeGen i1)                    (BNodeGen i2)                    = compare i1 i2
+  compare (BNodeGen _)                     (LNode _)                        = LT
+  compare (BNodeGen _)                     _                                = GT
+  compare (LNode (PlainL bs1))             (LNode (PlainL bs2))             = compare bs1 bs2
+  compare (LNode (PlainL _))               (LNode _)                        = LT
+  compare (LNode (PlainLL bs1 bs1'))       (LNode (PlainLL bs2 bs2'))       =
+    case compare bs1' bs2' of
+      EQ -> compare bs1 bs2
+      LT -> LT
+      GT -> GT
+  compare (LNode (PlainLL _ _))            (LNode (PlainL _))               = GT
+  compare (LNode (PlainLL _ _))            (LNode _)                        = LT
+  compare (LNode (TypedL bs1 fs1))         (LNode (TypedL bs2 fs2))         =
+    case compare fs1 fs2 of
+      EQ -> compare bs1 bs2
+      LT -> LT
+      GT -> GT
+  compare (LNode (TypedL _ _))             (LNode _)                        = GT
+  compare (LNode _)                        _                                = GT
 
 -- |Two triples are equal iff their respective subjects, predicates, and objects
 -- are equal.
@@ -385,14 +368,7 @@ instance Eq Triple where
 -- |The ordering of triples is based on that of the subject, predicate, and object
 -- of the triple, in that order.
 instance Ord Triple where
-  (Triple s1 p1 o1) `compare` (Triple s2 p2 o2) =
-    case compareNode s1 s2 of
-      EQ -> case compareNode p1 p2 of
-              EQ -> compareNode o1 o2
-              LT -> LT
-              GT -> GT
-      GT -> GT
-      LT -> LT
+  compare = comparing (\(Triple s p o) -> (s, p, o))
 
 -- |Two 'LValue' values are equal iff they are of the same type and all fields are
 -- equal.
@@ -408,25 +384,21 @@ instance Eq LValue where
 -- literal value second, and '(TypedL literalValue datatypeUri)' being ordered
 -- by datatype first and literal value second.
 instance Ord LValue where
-  compare l1 l2 = compareLValue l1 l2
-
-{-# INLINE compareLValue #-}
-compareLValue :: LValue -> LValue -> Ordering
-compareLValue (PlainL bs1)       (PlainL bs2)       = compare bs1 bs2
-compareLValue (PlainL _)         _                  = LT
-compareLValue _                  (PlainL _)         = GT
-compareLValue (PlainLL bs1 bs1') (PlainLL bs2 bs2') =
-  case compare bs1' bs2' of
-    EQ -> compare bs1 bs2
-    GT -> GT
-    LT -> LT
-compareLValue (PlainLL _ _)       _                 = LT
-compareLValue _                   (PlainLL _ _)     = GT
-compareLValue (TypedL l1 t1) (TypedL l2 t2) =
-  case compareFS t1 t2 of
-    EQ -> compare l1 l2
-    GT -> GT
-    LT -> LT
+  compare (PlainL bs1)       (PlainL bs2)       = compare bs1 bs2
+  compare (PlainL _)         _                  = LT
+  compare _                  (PlainL _)         = GT
+  compare (PlainLL bs1 bs1') (PlainLL bs2 bs2') =
+    case compare bs1' bs2' of
+      EQ -> compare bs1 bs2
+      GT -> GT
+      LT -> LT
+  compare (PlainLL _ _)       _                 = LT
+  compare _                   (PlainLL _ _)     = GT
+  compare (TypedL l1 t1) (TypedL l2 t2) =
+    case compareFS t1 t2 of
+      EQ -> compare l1 l2
+      GT -> GT
+      LT -> LT
 
 -- String representations of the various data types; generally NTriples-like.
 

@@ -150,7 +150,7 @@ findMapping :: Map ByteString ByteString -> ByteString -> Maybe (ByteString, Byt
 findMapping pms uri =
   case mapping of
     Nothing     -> Nothing
-    Just (u, p) -> Just $ (p, B.drop (B.length u) uri) -- empty localName is permitted
+    Just (u, p) -> Just (p, B.drop (B.length u) uri) -- empty localName is permitted
   where
     mapping        = find (\(k, _) -> B.isPrefixOf k uri) (Map.toList pms)
 

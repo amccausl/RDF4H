@@ -20,8 +20,9 @@ import qualified Data.ByteString.Lazy.Char8 as B
 
 import Data.RDF
 import Data.RDF.Utils()
-import Text.RDF.RDF4H.TriplesGraph()
-import Text.RDF.RDF4H.MGraph()
+import Data.RDF.TriplesGraph()
+import Data.RDF.MGraph()
+import Text.RDF.RDF4H.ParserUtils (parseFile, parseURL)
 import Text.RDF.RDF4H.NTriplesParser (parseNTriplesRDF)
 import Text.RDF.RDF4H.TurtleParser (parseTurtleRDF)
 import Text.RDF.RDF4H.NTriplesSerializer()
@@ -46,7 +47,7 @@ parseTurtleString :: forall rdf. (RDF rdf) => Maybe String -> Maybe String -> By
 parseTurtleString baseUrl docUri = _parse (mkTurtleParser baseUrl docUri)
 
 mkTurtleParser :: forall rdf. (RDF rdf)
-               => Maybe String -> Maybe String -> (ByteString -> Either ParseFailure rdf)
+               => Maybe String -> Maybe String -> ByteString -> Either ParseFailure rdf
 mkTurtleParser b d = parseTurtleRDF ((BaseUrl . B.pack) `fmap` b) (B.pack `fmap` d)
 
 -- |Load an NTriples file from the filesystem.
@@ -67,7 +68,7 @@ parseNTriplesString = _parse parseNTriplesRDF
 
 -- |Print a list of triples to stdout; useful for debugging and interactive use.
 printTriples :: Triples -> IO ()
-printTriples  = mapM_ (putStrLn . show)
+printTriples  = mapM_ print
 
 -- Load a graph using the given parseFunc, parser, and the location (filesystem path
 -- or HTTP URL), calling error with the 'ParseFailure' message if unable to load

@@ -37,8 +37,8 @@ flag hpc
 library
   exposed-modules: Data.RDF
                  , Data.RDF.Namespace
-                 , Text.RDF.RDF4H.MGraph
-                 , Text.RDF.RDF4H.TriplesGraph
+                 , Data.RDF.MGraph
+                 , Data.RDF.TriplesGraph
                  , Text.RDF.RDF4H.NTriplesParser
                  , Text.RDF.RDF4H.NTriplesSerializer
                  , Text.RDF.RDF4H.TurtleParser
@@ -100,8 +100,8 @@ executable test-rdf4h
                  , HUnit >= 1.2.2.1 && < 1.3
     other-modules: Data.RDF
                  , Data.RDF.Namespace
-                 , Text.RDF.RDF4H.MGraph
-                 , Text.RDF.RDF4H.TriplesGraph
+                 , Data.RDF.MGraph
+                 , Data.RDF.TriplesGraph
                  , Text.RDF.RDF4H.NTriplesParser
                  , Text.RDF.RDF4H.NTriplesSerializer
                  , Text.RDF.RDF4H.TurtleParser

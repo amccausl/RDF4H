@@ -1,6 +1,6 @@
 -- |A simple graph implementation backed by 'Data.Map'.
 
-module Text.RDF.RDF4H.MGraph (
+module Data.RDF.MGraph (
   MGraph,
   empty,
   mkRdf,
@@ -151,10 +151,10 @@ q1 Nothing  p o spoMap = Set.unions $ map (q2 p o) $ Map.toList spoMap
 
 q2 :: Maybe Node -> Maybe Node -> (Node, Map Node (Set Node)) -> Set (Node, Node, Node)
 q2 (Just p) o (s, pmap) =
-  case p `Map.member` pmap of
-    False  -> Set.empty
-    True   -> Set.map (\(p', o') -> (s, p', o')) $
+  if p `Map.member` pmap
+    then Set.map (\(p', o') -> (s, p', o')) $
                 q3 o (p, Map.findWithDefault undefined p pmap)
+    else Set.empty
 q2 Nothing o (s, pmap) = Set.map (\(x,y) -> (s,x,y)) $ Set.unions $ map (q3 o) opmaps
   where opmaps ::[(Node, Set Node)]
         opmaps = Map.toList pmap
