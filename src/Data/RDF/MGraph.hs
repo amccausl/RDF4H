@@ -35,6 +35,7 @@ import Data.List
 --
 --  * 'query'    : O(log n)
 newtype MGraph = MGraph (SPOMap, Maybe BaseUrl, PrefixMappings)
+  deriving (Show)
 
 instance RDF MGraph where
   baseUrl           = baseUrl'
