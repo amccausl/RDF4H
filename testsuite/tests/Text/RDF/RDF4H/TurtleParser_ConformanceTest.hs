@@ -1,10 +1,10 @@
-module Main where
+module Text.RDF.RDF4H.TurtleParser_ConformanceTest where
 
 import Data.RDF
+import Data.RDF.TriplesGraph
+import Data.RDF.GraphTestUtils
 import Text.RDF.RDF4H.TurtleParser
 import Text.RDF.RDF4H.NTriplesParser
-import Text.RDF.RDF4H.TriplesGraph
-import Text.RDF.RDF4H.GraphTestUtils
 
 import Text.Printf
 
@@ -19,8 +19,8 @@ import qualified Data.ByteString.Lazy.Char8 as B
 
 import Debug.Trace(trace)
 
-main :: IO ()
-main = putStrLn "Running TurtleParser_ConformanceTest..." >> runAllCTests >>= putStrLn . show
+--main :: IO ()
+--main = putStrLn "Running TurtleParser_ConformanceTest..." >> runAllCTests >>= putStrLn . show
 
 
 _debug = trace
@@ -86,7 +86,7 @@ checkBadConformanceTest i =
 
 -- Determines if graphs are equivalent, returning Nothing if so or else a diagnostic message.
 -- First graph is expected graph, second graph is actual.
-equivalent :: Graph gr => Either ParseFailure gr -> Either ParseFailure gr -> Maybe String
+equivalent :: RDF gr => Either ParseFailure gr -> Either ParseFailure gr -> Maybe String
 equivalent (Left _) _                = Nothing
 equivalent _        (Left _)         = Nothing
 equivalent (Right gr1) (Right gr2)   = {- _debug (show (length gr1ts, length gr2ts)) -} (test $! zip gr1ts gr2ts)
@@ -124,7 +124,7 @@ handleLoad :: Either ParseFailure TriplesGraph -> Either ParseFailure TriplesGra
 handleLoad res =
   case res of
     l@(Left _)  -> l
-    (Right gr)  -> Right $ mkGraph (map normalize (triplesOf gr)) (baseUrl gr) (prefixMappings gr)
+    (Right gr)  -> Right $ mkRdf (map normalize (triplesOf gr)) (baseUrl gr) (prefixMappings gr)
 
 normalize :: Triple -> Triple
 normalize t = let s' = normalizeN $ subjectOf t
@@ -146,7 +146,7 @@ assertLoadSuccess _      (Right _) = return ()
 assertLoadFailure _       (Left _)   = return ()
 assertLoadFailure idStr _          = T.assertFailure $ "Bad test " ++ idStr ++ " loaded successfully."
 
-assertEquivalent :: Graph gr => String -> Either ParseFailure gr -> Either ParseFailure gr -> T.Assertion
+assertEquivalent :: RDF gr => String -> Either ParseFailure gr -> Either ParseFailure gr -> T.Assertion
 assertEquivalent testname r1 r2 =
   case equiv of
     Nothing    -> T.assert True

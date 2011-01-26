@@ -42,6 +42,7 @@ import qualified Data.Map as Map
 --
 --  * 'query'    : O(n)
 newtype TriplesGraph = TriplesGraph (Triples, Maybe BaseUrl, PrefixMappings)
+  deriving (Eq)
 
 instance RDF TriplesGraph where
   baseUrl           = baseUrl'

@@ -1,7 +1,9 @@
+module Data.RDF.MGraph_Test where
+
 import Data.RDF
 import Data.RDF.Namespace
-import Text.RDF.RDF4H.MGraph
-import Text.RDF.RDF4H.GraphTestUtils
+import Data.RDF.MGraph
+import Data.RDF.GraphTestUtils
 
 import qualified Data.Map as Map
 import Control.Monad
@@ -12,7 +14,7 @@ import Test.QuickCheck
 ----------------------------------------------------
 
 instance Arbitrary MGraph where
-  arbitrary = liftM3 mkGraph arbitraryTs (return Nothing) (return $ PrefixMappings Map.empty)
+  arbitrary = liftM3 mkRdf arbitraryTs (return Nothing) (return $ PrefixMappings Map.empty)
   --coarbitrary = undefined
 
 instance Show MGraph where
@@ -21,8 +23,8 @@ instance Show MGraph where
 _empty :: MGraph
 _empty = empty
 
-_mkGraph :: Triples -> Maybe BaseUrl -> PrefixMappings -> MGraph
-_mkGraph = mkGraph
+_mkRdf :: Triples -> Maybe BaseUrl -> PrefixMappings -> MGraph
+_mkRdf = mkRdf
 
 _triplesOf :: MGraph -> Triples
 _triplesOf = triplesOf
@@ -34,20 +36,20 @@ _triplesOf = triplesOf
 prop_mg_empty :: Bool
 prop_mg_empty = p_empty _triplesOf _empty
 
-prop_mg_mkGraph_triplesOf :: Triples -> Maybe BaseUrl -> PrefixMappings -> Bool
-prop_mg_mkGraph_triplesOf = p_mkGraph_triplesOf _triplesOf _mkGraph
+prop_mg_mkRdf_triplesOf :: Triples -> Maybe BaseUrl -> PrefixMappings -> Bool
+prop_mg_mkRdf_triplesOf = p_mkRdf_triplesOf _triplesOf _mkRdf
 
-prop_mg_mkGraph_no_dupes :: Triples -> Maybe BaseUrl -> PrefixMappings -> Bool
-prop_mg_mkGraph_no_dupes = p_mkGraph_no_dupes _triplesOf _mkGraph
+prop_mg_mkRdf_no_dupes :: Triples -> Maybe BaseUrl -> PrefixMappings -> Bool
+prop_mg_mkRdf_no_dupes = p_mkRdf_no_dupes _triplesOf _mkRdf
 
 prop_mg_query_match_none :: Triples -> Maybe BaseUrl -> PrefixMappings -> Bool
-prop_mg_query_match_none = p_query_match_none _mkGraph
+prop_mg_query_match_none = p_query_match_none _mkRdf
 
 prop_mg_query_matched_spo :: MGraph -> Property
 prop_mg_query_matched_spo = p_query_matched_spo _triplesOf
 
 prop_mg_query_matched_spo_no_dupes :: MGraph -> Property
-prop_mg_query_matched_spo_no_dupes = p_query_matched_spo_no_dupes _triplesOf _mkGraph
+prop_mg_query_matched_spo_no_dupes = p_query_matched_spo_no_dupes _triplesOf _mkRdf
 
 prop_mg_query_unmatched_spo :: MGraph -> Triple -> Property
 prop_mg_query_unmatched_spo = p_query_unmatched_spo _triplesOf

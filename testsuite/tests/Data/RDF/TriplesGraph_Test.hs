@@ -1,7 +1,9 @@
+module Data.RDF.TriplesGraph_Test where
+
 import Data.RDF
 import Data.RDF.Namespace
-import Text.RDF.RDF4H.TriplesGraph
-import Text.RDF.RDF4H.GraphTestUtils
+import Data.RDF.TriplesGraph
+import Data.RDF.GraphTestUtils
 
 --import Data.Map(Map)
 import qualified Data.Map as Map
@@ -15,7 +17,7 @@ import Control.Monad
 ----------------------------------------------------
 
 instance Arbitrary TriplesGraph where
-  arbitrary = liftM3 mkGraph arbitraryTs (return Nothing) (return $ PrefixMappings Map.empty)
+  arbitrary = liftM3 mkRdf arbitraryTs (return Nothing) (return $ PrefixMappings Map.empty)
   --coarbitrary = undefined
 
 instance Show TriplesGraph where
@@ -24,8 +26,8 @@ instance Show TriplesGraph where
 _empty :: TriplesGraph
 _empty = empty
 
-_mkGraph :: Triples -> Maybe BaseUrl -> PrefixMappings -> TriplesGraph
-_mkGraph = mkGraph
+_mkRdf :: Triples -> Maybe BaseUrl -> PrefixMappings -> TriplesGraph
+_mkRdf = mkRdf
 
 _triplesOf :: TriplesGraph -> Triples
 _triplesOf = triplesOf
@@ -37,17 +39,17 @@ _triplesOf = triplesOf
 prop_tg_empty :: Bool
 prop_tg_empty = p_empty _triplesOf _empty
 
-prop_tg_mkGraph_triplesOf :: Triples -> Maybe BaseUrl -> PrefixMappings -> Bool
-prop_tg_mkGraph_triplesOf = p_mkGraph_triplesOf _triplesOf _mkGraph
+prop_tg_mkRdf_triplesOf :: Triples -> Maybe BaseUrl -> PrefixMappings -> Bool
+prop_tg_mkRdf_triplesOf = p_mkRdf_triplesOf _triplesOf _mkRdf
 
 prop_tg_query_match_none :: Triples -> Maybe BaseUrl -> PrefixMappings -> Bool
-prop_tg_query_match_none = p_query_match_none _mkGraph
+prop_tg_query_match_none = p_query_match_none _mkRdf
 
 prop_tg_query_matched_spo :: TriplesGraph -> Property
 prop_tg_query_matched_spo = p_query_matched_spo _triplesOf
 
 prop_tg_query_matched_spo_no_dupes :: TriplesGraph -> Property
-prop_tg_query_matched_spo_no_dupes = p_query_matched_spo_no_dupes _triplesOf _mkGraph
+prop_tg_query_matched_spo_no_dupes = p_query_matched_spo_no_dupes _triplesOf _mkRdf
 
 prop_tg_query_unmatched_spo :: TriplesGraph -> Triple -> Property
 prop_tg_query_unmatched_spo = p_query_unmatched_spo _triplesOf

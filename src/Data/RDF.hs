@@ -4,6 +4,9 @@
 --
 
 module Data.RDF (
+  -- * Parsing RDF
+  RdfParser(parseString, parseFile, parseURL),
+  ParseFailure(..), parseFile', parseURL', -- Imported from Text/RDF/RDF4H/ParserUtils
   -- * Serializing RDF
   RdfSerializer(hWriteG, writeG, hWriteH, writeH, hWriteTs, writeTs, hWriteT, writeT, hWriteN, writeN),
   -- * RDF graph 
@@ -21,7 +24,6 @@ module Data.RDF (
   equalSubjects, equalPredicates, equalObjects,
   subjectOf, predicateOf, objectOf,
   Subject, Predicate, Object,
-  ParseFailure(ParseFailure),
   FastString(uniq,value),mkFastString,
   s2b,b2s,unode,bnode,lnode,plainL,plainLL,typedL,
   View, view,
@@ -30,7 +32,9 @@ module Data.RDF (
 
 import Data.RDF.Namespace
 import Data.RDF.Utils
+import Text.RDF.RDF4H.ParserUtils
 
+import Data.Maybe(fromMaybe)
 import Data.ByteString.Lazy.Char8(ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.List
@@ -141,6 +145,25 @@ class RDF rdf where
   query rdf s p o = select rdf (toNodeSelector s) (toNodeSelector p) (toNodeSelector o)
     where toNodeSelector Nothing = Nothing
           toNodeSelector (Just node) = Just (== node)
+
+-- |An RdfParser is a parser that knows how to parse 1 format of RDF and
+-- can parse an RDF document of that type from a string, a file, or a URL.
+-- Required configuration options will vary from instance to instance.
+class RdfParser p where
+
+  -- |Parse RDF from the given bytestring, yielding a failure with error message or
+  -- the resultant graph.
+  parseString :: forall rdf. (RDF rdf) => p -> ByteString -> (Either ParseFailure rdf)
+
+  -- |Parse RDF from the local file with the given path, yielding a failure with error
+  -- message or the resultant graph in the IO monad.
+  parseFile   :: forall rdf. (RDF rdf) => p -> String     -> IO (Either ParseFailure rdf)
+  parseFile r = parseFile' (parseString r)
+
+  -- |Parse RDF from the remote file with the given HTTP URL (https is not supported),
+  -- yielding a failure with error message or the resultant graph in the IO monad.
+  parseURL    :: forall rdf. (RDF rdf) => p -> String     -> IO (Either ParseFailure rdf)
+  parseURL r = parseURL' (parseString r)
 
 -- |An RdfSerializer is a serializer of RDF to some particular output format, such as
 -- NTriples or Turtle.
@@ -312,11 +335,6 @@ newtype BaseUrl = BaseUrl ByteString
 -- node selectors are used to match a triple.
 type NodeSelector = Maybe (Node -> Bool)
 
--- |Represents a failure in parsing an N-Triples document, including
--- an error message with information about the cause for the failure.
-newtype ParseFailure = ParseFailure String
-  deriving (Eq, Show)
-
 -- |A node is equal to another node if they are both the same type
 -- of node and if the field values are equal.
 instance Eq Node where
@@ -420,6 +438,12 @@ instance Show LValue where
 -- |Answer the given list of triples in sorted order.
 sortTriples :: Triples -> Triples
 sortTriples = sort
+
+-- Keep the (Just t) triples (eliminating the Nothing comments), and unbox the
+-- triples, leaving a list of triples.
+justTriples :: [Maybe Triple] -> [Triple]
+justTriples = map (fromMaybe (error "ParserUtils.justTriples")) .
+              filter (/= Nothing)
 
 -- |Answer the subject node of the triple.
 {-# INLINE subjectOf #-}

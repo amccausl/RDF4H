@@ -22,6 +22,7 @@ import Network.HTTP (Request(..))
 import Data.RDF
 import Data.RDF.Namespace (mkPrefixedNS')
 import Data.RDF.TriplesGraph (TriplesGraph(..))
+import Data.RDF.TriplesGraph_Test
 
 import Text.RDF.RDF4H.XmlParser
 

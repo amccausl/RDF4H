@@ -3,11 +3,13 @@
 -- <http://www.w3.org/TeamSubmission/turtle/>.
 
 module Text.RDF.RDF4H.TurtleParser(
+  TurtleParser(TurtleParser),
   parseTurtleRDF
 ) where
 
 import Data.RDF
 import Data.RDF.Namespace
+import Text.RDF.RDF4H.ParserUtils
 
 import Text.Parsec
 import Text.Parsec.ByteString.Lazy
@@ -29,6 +31,52 @@ import Debug.Trace(trace)
 
 -- To avoid compiler warnings when not being used.
 _trace = trace
+
+-- |An 'RdfParser' implementation for parsing RDF in the 
+-- Turtle format. It takes optional arguments representing the base URL to use
+-- for resolving relative URLs in the document (may be overridden in the document
+-- itself using the \@base directive), and the URL to use for the document itself
+-- for resolving references to <> in the document.
+-- To use this parser, pass a 'TurtleParser' value as the first argument to any of
+-- the 'parseString', 'parseFile', or 'parseURL' methods of the 'RdfParser' type
+-- class.
+data TurtleParser = TurtleParser (Maybe BaseUrl) (Maybe ByteString)
+
+-- |'TurtleParser' is an instance of 'RdfParser'.
+instance RdfParser TurtleParser where
+  -- |Parse the given string as a Turtle document. The arguments and return type have the same semantics 
+  -- as <parseURL>, except that the last @String@ argument corresponds to the Turtle document itself as
+  -- a a string rather than a location URI.
+  parseString (TurtleParser bUrl dUrl) ttlStr = handleResult bUrl (runParser t_turtleDoc (initialState bUrl dUrl) "" (ttlStr))
+
+  -- |Parse the document at the given location URL as a Turtle document, using an optional @BaseUrl@
+  -- as the base URI, and using the given document URL as the URI of the Turtle document itself.
+  --
+  -- The @BaseUrl@ is used as the base URI within the document for resolving any relative URI references.
+  -- It may be changed within the document using the @\@base@ directive. At any given point, the current
+  -- base URI is the most recent @\@base@ directive, or if none, the @BaseUrl@ given to @parseURL@, or 
+  -- if none given, the document URL given to @parseURL@. For example, if the @BaseUrl@ were
+  -- @http:\/\/example.org\/@ and a relative URI of @\<b>@ were encountered (with no preceding @\@base@ 
+  -- directive), then the relative URI would expand to @http:\/\/example.org\/b@.
+  --
+  -- The document URL is for the purpose of resolving references to 'this document' within the document,
+  -- and may be different than the actual location URL from which the document is retrieved. Any reference
+  -- to @\<>@ within the document is expanded to the value given here. Additionally, if no @BaseUrl@ is 
+  -- given and no @\@base@ directive has appeared before a relative URI occurs, this value is used as the
+  -- base URI against which the relative URI is resolved.
+  --p
+  -- Returns either a @ParseFailure@ or a new graph containing the parsed triples.
+  parseURL ttlParser = parseURL' (parseString ttlParser) 
+
+  -- |Parse the given file as a Turtle document. The arguments and return type have the same semantics
+  -- as 'parseURL', except that the last @String@ argument corresponds to a filesystem location rather
+  -- than a location URI.
+  --
+  -- Returns either a @ParseFailure@ or a new graph containing the parsed triples.
+  parseFile (TurtleParser bUrl dUrl) fPath = B.readFile fPath >>= \bs -> return $ handleResult bUrl (runParser t_turtleDoc (initialState bUrl dUrl) (maybe "" B.unpack dUrl) bs)
+
+{-# INLINE initialState #-}
+initialState bUrl docUrl = (bUrl, docUrl, 1, PrefixMappings Map.empty, [], [], [], Seq.empty)
 
 parseTurtleRDF :: forall rdf. (RDF rdf)
                => Maybe BaseUrl           -- ^ The base URL for the RDF if required

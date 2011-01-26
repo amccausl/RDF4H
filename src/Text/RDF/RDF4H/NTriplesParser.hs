@@ -3,12 +3,14 @@
 -- <http://www.w3.org/TR/rdf-testcases/#ntriples>.
 
 module Text.RDF.RDF4H.NTriplesParser(
+  NTriplesParser(NTriplesParser), ParseFailure,
   parseNTriplesRDF
 ) where
 
 -- TODO: switch to OverloadedStrings and use ByteString literals (?).
 
 import Data.RDF
+import Text.RDF.RDF4H.ParserUtils
 
 import Data.Char(isLetter, isDigit, isLower)
 import qualified Data.Map as Map
@@ -18,6 +20,21 @@ import Text.Parsec.ByteString.Lazy
 
 import Data.ByteString.Lazy.Char8(ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B
+
+-- |NTriplesParser is an 'RdfParser' implementation for parsing RDF in the
+-- NTriples format. It requires no configuration options. To use this parser,
+-- pass an 'NTriplesParser' value as the first argument to any of the 
+-- 'parseString', 'parseFile', or 'parseURL' methods of the 'RdfParser' type
+-- class.
+data NTriplesParser = NTriplesParser
+
+-- |'NTriplesParser' is an instance of 'RdfParser'.
+instance RdfParser NTriplesParser where
+  parseString _ bs = handleParse mkRdf (runParser nt_ntripleDoc () "" bs)
+
+  parseFile _ path = B.readFile path >>= return . runParser nt_ntripleDoc () path >>= return . handleParse mkRdf
+
+  parseURL p url = parseURL' (parseString p) url
 
 parseNTriplesRDF :: forall rdf. (RDF rdf)
                  => ByteString              -- ^ The contents to parse
