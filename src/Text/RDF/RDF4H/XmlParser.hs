@@ -22,8 +22,22 @@ parseXmlRDF :: forall rdf. (RDF rdf)
             -> Maybe ByteString        -- ^ DocUrl: The request URL for the RDF if available
             -> ByteString              -- ^ The contents to parse
             -> Either ParseFailure rdf -- ^ The RDF representation of the triples or ParseFailure
-parseXmlRDF bUrl dUrl xmlStr = Left (ParseFailure "XML parsing not implemented")
-  where xml = runLA xread (b2s xmlStr)
+parseXmlRDF bUrl dUrl xmlStr = case runSLA (xread >>> addMetaData bUrl dUrl >>> getRDF) 0 (b2s xmlStr) of
+                                (_,r:rest) -> Right r
+                                _ -> Left (ParseFailure "XML parsing failed")
+
+-- |Add a root tag to a given XmlTree to appear as if it was read from a readDocument function
+addMetaData :: (ArrowXml a) => Maybe BaseUrl -> Maybe ByteString -> a XmlTree XmlTree
+addMetaData bUrlM dUrlM = mkelem "/"
+                        ( [ sattr "transfer-Message" "OK"
+                          , sattr "transfer-MimeType" "text/rdf"
+                          ] ++ mkSource dUrlM ++ mkBase bUrlM
+                        )
+                        [ arr id ]
+  where mkSource (Just dUrl) = [ sattr "source" (b2s dUrl) ]
+        mkSource Nothing = []
+        mkBase (Just (BaseUrl bUrl)) = [ sattr "transfer-URI" (b2s bUrl) ]
+        mkBase Nothing = []
 
 -- |Arrow that translates HXT XmlTree to an RDF representation
 getRDF :: forall rdf a. (RDF rdf, ArrowXml a, ArrowState Int a) => a XmlTree rdf
@@ -42,11 +56,11 @@ getRDF = proc xml -> do
 
 getPredicatesFromChildren :: forall a. (ArrowXml a, ArrowState Int a) => Subject -> a XmlTree (Subject, Predicate, Object)
 getPredicatesFromChildren s0 = proc rdf -> do
-                                    cp <- isElem <<< getChildren -< rdf
+                                    cp <- isElem <<< getChildren        -< rdf
                                     p0 <- arr (unode . s2b) <<< getName -< cp
-                                    co <- getChildren -< cp
-                                    o0 <- mkNode -< co
-                                    (s, p, o) <- recursiveParse -< ((s0, p0, o0), (o0, co))
+                                    co <- isElem <<< getChildren        -< cp
+                                    o0 <- mkNode                        -< co
+                                    (s, p, o) <- arr2A constA <+> (wrapKnownDescription <<< arr snd) -< ((s0, p0, o0), (o0, co))
                                     returnA -< (s, p, o)
 
 recursiveParse :: forall a. (ArrowXml a, ArrowState Int a) => a ((Subject, Predicate, Object), (Object, XmlTree)) (Subject, Predicate, Object)
@@ -68,20 +82,9 @@ attachSubject s (p, o) = (s, p, o)
 
 -- |Read a Node from the "rdf:about" property or generate a blank node
 mkNode :: forall a b. (ArrowXml a, ArrowState Int a) => a XmlTree Node
-mkNode = (getAttrValue0 "rdf:about" >>> arr (unode . s2b)) `orElse` mkBlankNode
+mkNode = ((getAttrValue0 "rdf:about" `orElse` getAttrValue0 "rdf:resource") >>> arr (unode . s2b)) `orElse` mkBlankNode
 
 -- |Generate an RDF blank node with incrementing IDs from the arrow state
 mkBlankNode :: forall a b. (ArrowState Int a) => a b Node
 mkBlankNode = nextState (+1) >>> arr (BNodeGen)
-
-fakeDoc :: ArrowXml a => a XmlTree XmlTree
-fakeDoc = mkelem "/"
-            [ sattr "source" "../../data/xml/example07.rdf"
-            , sattr "transfer-URI" "http://www.w3.org/TR/REC-rdf-syntax/example07.rdf"
-            , sattr "transfer-Message" "OK"
-            , sattr "transfer-Status" "200"
-            , sattr "transfer-MimeType" "text/rdf"
-            , sattr "transfer-Encoding" "ISO-8859-1"
-            ]
-            [ arr id ]
 
