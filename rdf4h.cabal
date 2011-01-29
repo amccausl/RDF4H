@@ -52,7 +52,7 @@ library
                  , network >= 2.2.0.0 && < 2.3
                  , HTTP >= 4000.0.0 && < 4000.2
                  , hxt >= 9.0.0 && < 9.1
-                 , MissingH >= 1.0.0 && < 1.1
+                 , MissingH >= 1.0.0 && < 1.2
   other-modules:   Data.RDF.Utils
                  , Text.RDF.RDF4H.ParserUtils
                  , Text.RDF.RDF4H.Interact
@@ -70,7 +70,7 @@ executable rdf4h
                  , network >= 2.2.0.0 && < 2.3
                  , HTTP >= 4000.0.0 && < 4000.2
                  , hxt >= 9.0.0 && < 9.1
-                 , MissingH >= 1.0.0 && < 1.1
+                 , MissingH >= 1.0.0 && < 1.2
   hs-source-dirs:  src
   extensions:      BangPatterns
   ghc-options:     -O2 -Wall -fglasgow-exts -fno-warn-name-shadowing -fno-warn-missing-signatures -fno-warn-unused-do-bind
