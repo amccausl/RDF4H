@@ -22,6 +22,7 @@ module Data.RDF (
   PrefixMappings(PrefixMappings), toPMList, PrefixMapping(PrefixMapping),
   NodeSelector, isUNode, isBNode, isLNode,
   equalSubjects, equalPredicates, equalObjects,
+  isIsomorphic,
   subjectOf, predicateOf, objectOf,
   Subject, Predicate, Object,
   FastString(uniq,value),mkFastString,
@@ -505,3 +506,25 @@ fromEither res =
 removeDupes :: Triples -> Triples
 removeDupes =  map head . group . sort
 
+-- |This determines if two RDF representations are equal regardless of blank
+-- nodc names, triple order and prefixes.  In math terms, this is the \simeq
+-- latex operator, or ~=
+isIsomorphic :: forall rdf1 rdf2. (RDF rdf1, RDF rdf2) => rdf1 -> rdf2 -> Bool
+isIsomorphic g1 g2 = normalize g1 == normalize g2
+  where normalize :: forall rdf. (RDF rdf) => rdf -> Triples
+        normalize = sort . nub . expandTriples
+
+-- |Expand the triples in a graph with the prefix map and base URL for that
+-- graph.
+expandTriples :: (RDF rdf) => rdf -> Triples
+expandTriples rdf = expandTriples' [] (baseUrl rdf) (prefixMappings rdf) (triplesOf rdf)
+
+expandTriples' :: Triples -> Maybe BaseUrl -> PrefixMappings -> Triples -> Triples
+expandTriples' acc _ _ [] = acc
+expandTriples' acc baseUrl prefixMappings (t:rest) = expandTriples' (normalize baseUrl prefixMappings t : acc) baseUrl prefixMappings rest
+  where normalize baseUrl prefixMappings = expandPrefixes prefixMappings . expandBaseUrl baseUrl
+        expandBaseUrl (Just baseUrl) triple = triple
+        expandBaseUrl Nothing triple = triple
+        expandPrefixes prefixMappings triple = triple
+
+-- expand prefix map into triples, sort triples, recursively generate a blank node mapping
