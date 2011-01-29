@@ -26,7 +26,9 @@ import Data.RDF.TriplesGraph_Test
 
 import Text.RDF.RDF4H.XmlParser
 
-tests = [ testGroup "XmlParser:parseXmlRDF" [ testCase "simpleStriping" test_simpleStriping
+tests = [ testGroup "XmlParser:parseXmlRDF" [ testCase "simpleStriping1" test_simpleStriping1
+                                            , testCase "simpleSingleton1" test_simpleSingleton1
+                                            , testCase "simpleSingleton2" test_simpleSingleton2
                                             , testCase "example07" test_parseXmlRDF_example07
 --                                            , testCase "example08" test_parseXmlRDF_example08
 --                                            , testCase "example09" test_parseXmlRDF_example09
@@ -49,7 +51,7 @@ mkTextNode = lnode . plainL . s2b
 testParse exRDF ex = assertBool ("expected: " ++ show ex ++ "but got: " ++ show parsed) (isIsomorphic (parsed :: TriplesGraph) (ex :: TriplesGraph))
   where parsed = case parseXmlRDF Nothing Nothing (s2b exRDF) of Right result -> result
 
-test_simpleStriping = testParse
+test_simpleStriping1 = testParse
     "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"\
             \ xmlns:dc=\"http://purl.org/dc/elements/1.1/\">\
       \<rdf:Description rdf:about=\"http://www.w3.org/TR/rdf-syntax-grammar\">\
@@ -57,6 +59,32 @@ test_simpleStriping = testParse
       \</rdf:Description>\
     \</rdf:RDF>"
     ( mkRdf [ Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar") ((unode . s2b) "dc:title") (mkTextNode "RDF/XML Syntax Specification (Revised)") ]
+            Nothing
+            ( PrefixMappings (Map.fromList [ (s2b "dc", s2b "http://purl.org/dc/elements/1.1/")
+                                           , (s2b "rdf", s2b "http://www.w3.org/1999/02/22-rdf-syntax-ns#") ]) )
+    )
+
+test_simpleSingleton1 = testParse
+    "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"\
+            \ xmlns:dc=\"http://purl.org/dc/elements/1.1/\">\
+      \<rdf:Description rdf:about=\"http://www.w3.org/TR/rdf-syntax-grammar\"\
+                      \ dc:title=\"RDF/XML Syntax Specification (Revised)\"/>\
+    \</rdf:RDF>"
+    ( mkRdf [ Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar") ((unode . s2b) "dc:title") (mkTextNode "RDF/XML Syntax Specification (Revised)") ]
+            Nothing
+            ( PrefixMappings (Map.fromList [ (s2b "dc", s2b "http://purl.org/dc/elements/1.1/")
+                                           , (s2b "rdf", s2b "http://www.w3.org/1999/02/22-rdf-syntax-ns#") ]) )
+    )
+
+test_simpleSingleton2 = testParse
+    "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"\
+            \ xmlns:dc=\"http://purl.org/dc/elements/1.1/\">\
+      \<rdf:Description rdf:about=\"http://www.w3.org/TR/rdf-syntax-grammar\"\
+                      \ dc:title=\"RDF/XML Syntax Specification (Revised)\"\
+                      \ dc:subject=\"RDF\"/>\
+    \</rdf:RDF>"
+    ( mkRdf [ Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar") ((unode . s2b) "dc:title") (mkTextNode "RDF/XML Syntax Specification (Revised)")
+            , Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar") ((unode . s2b) "dc:subject") (mkTextNode "RDF") ]
             Nothing
             ( PrefixMappings (Map.fromList [ (s2b "dc", s2b "http://purl.org/dc/elements/1.1/")
                                            , (s2b "rdf", s2b "http://www.w3.org/1999/02/22-rdf-syntax-ns#") ]) )
