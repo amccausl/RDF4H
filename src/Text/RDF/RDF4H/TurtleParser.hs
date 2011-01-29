@@ -9,7 +9,6 @@ module Text.RDF.RDF4H.TurtleParser(
 
 import Data.RDF
 import Data.RDF.Namespace
-import Text.RDF.RDF4H.ParserUtils
 
 import Text.Parsec
 import Text.Parsec.ByteString.Lazy

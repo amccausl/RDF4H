@@ -2,7 +2,6 @@ module Main where
 
 import Data.RDF
 import Data.RDF.TriplesGraph
-import Text.RDF.RDF4H.ParserUtils (parseFile, parseURL)
 import Text.RDF.RDF4H.NTriplesParser (parseNTriplesRDF)
 import Text.RDF.RDF4H.TurtleParser (parseTurtleRDF)
 import Text.RDF.RDF4H.NTriplesSerializer
@@ -53,16 +52,16 @@ main =
          emptyPms   = PrefixMappings Map.empty
      case (inputFormat, isUri $ s2b inputUri) of
        -- we use TriplesGraph in all cases, since it preserves the ordering of triples
-       ("turtle",    True) -> parseURL (parseTurtleRDF mInputUri docUri) inputUri
+       ("turtle",    True) -> parseURL' (parseTurtleRDF mInputUri docUri) inputUri
                                 >>= \(res :: Either ParseFailure TriplesGraph) -> write outputFormat docUri emptyPms res
        ("turtle",   False) -> (if inputUri /= "-"
-                                  then parseFile (parseTurtleRDF mInputUri docUri) inputUri
+                                  then parseFile' (parseTurtleRDF mInputUri docUri) inputUri
                                   else fmap (parseTurtleRDF mInputUri docUri) B.getContents)
                                 >>= \(res :: Either ParseFailure TriplesGraph) -> write outputFormat docUri emptyPms res
-       ("ntriples",  True) -> parseURL parseNTriplesRDF inputUri
+       ("ntriples",  True) -> parseURL' parseNTriplesRDF inputUri
                                 >>= \(res :: Either ParseFailure TriplesGraph) -> write outputFormat Nothing emptyPms res
        ("ntriples", False) -> (if inputUri /= "-"
-                                  then parseFile parseNTriplesRDF inputUri
+                                  then parseFile' parseNTriplesRDF inputUri
                                   else fmap parseNTriplesRDF B.getContents)
                                 >>= \(res :: Either ParseFailure TriplesGraph) -> write outputFormat Nothing emptyPms res
        (str     ,   _    ) -> putStrLn ("Invalid format: " ++ str) >> exitFailure

@@ -22,7 +22,6 @@ import Data.RDF
 import Data.RDF.Utils()
 import Data.RDF.TriplesGraph()
 import Data.RDF.MGraph()
-import Text.RDF.RDF4H.ParserUtils (parseFile, parseURL)
 import Text.RDF.RDF4H.NTriplesParser (parseNTriplesRDF)
 import Text.RDF.RDF4H.TurtleParser (parseTurtleRDF)
 import Text.RDF.RDF4H.NTriplesSerializer()
@@ -34,12 +33,12 @@ import Text.RDF.RDF4H.TurtleSerializer()
 -- 
 -- This function calls 'error' with an error message if unable to load the file.
 loadTurtleFile :: forall rdf. (RDF rdf) => Maybe String -> Maybe String -> String -> IO rdf
-loadTurtleFile baseUrl docUri = _load (parseFile (mkTurtleParser baseUrl docUri))
+loadTurtleFile baseUrl docUri = _load (parseFile' (mkTurtleParser baseUrl docUri))
 
 -- |Load a Turtle file from a URL just like 'loadTurtleFile' does from the local
 -- filesystem. See that function for explanation of args, etc.
 loadTurtleURL  :: forall rdf. (RDF rdf) => Maybe String -> Maybe String -> String -> IO rdf
-loadTurtleURL baseUrl docUri  = _load (parseURL (mkTurtleParser baseUrl docUri))
+loadTurtleURL baseUrl docUri  = _load (parseURL' (mkTurtleParser baseUrl docUri))
 
 -- |Parse a Turtle document from the given 'ByteString' using the given @baseUrl@ and 
 -- @docUri@, which have the same semantics as in the loadTurtle* functions.
@@ -54,12 +53,12 @@ mkTurtleParser b d = parseTurtleRDF ((BaseUrl . B.pack) `fmap` b) (B.pack `fmap`
 -- 
 -- This function calls 'error' with an error message if unable to load the file.
 loadNTriplesFile :: forall rdf. (RDF rdf) => String -> IO rdf
-loadNTriplesFile = _load (parseFile parseNTriplesRDF)
+loadNTriplesFile = _load (parseFile' parseNTriplesRDF)
 
 -- |Load an NTriples file from a URL just like 'loadNTriplesFile' does from the local
 -- filesystem. See that function for more info.
 loadNTriplesURL :: forall rdf. (RDF rdf) => String -> IO rdf
-loadNTriplesURL  = _load (parseURL parseNTriplesRDF)
+loadNTriplesURL  = _load (parseURL' parseNTriplesRDF)
 
 -- |Parse an NTriples document from the given 'ByteString', as 'loadNTriplesFile' does
 -- from a file.

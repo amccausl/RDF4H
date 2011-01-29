@@ -3,14 +3,13 @@
 -- <http://www.w3.org/TR/rdf-testcases/#ntriples>.
 
 module Text.RDF.RDF4H.NTriplesParser(
-  NTriplesParser(NTriplesParser), ParseFailure,
+  NTriplesParser(NTriplesParser),
   parseNTriplesRDF
 ) where
 
 -- TODO: switch to OverloadedStrings and use ByteString literals (?).
 
 import Data.RDF
-import Text.RDF.RDF4H.ParserUtils
 
 import Data.Char(isLetter, isDigit, isLower)
 import qualified Data.Map as Map
