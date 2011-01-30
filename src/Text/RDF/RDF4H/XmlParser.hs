@@ -65,7 +65,7 @@ getRDF = proc xml -> do
 -- |Read an rdf:Description tag to its corresponding Triples
 parseDescription :: forall a. (ArrowXml a, ArrowState GParseState a) => a (LParseState, XmlTree) Triple
 parseDescription = updateState
-               >>> (arr2A parsePredicatesFromAttr <+> parsePredicatesFromChildren)
+               >>> (arr2A parsePredicatesFromAttr <+> (second getChildren >>> parsePredicatesFromChildren))
 
 -- |Read the attributes of an rdf:Description element.  These correspond to the Predicate Object pairs of the Triple
 parsePredicatesFromAttr :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
@@ -106,7 +106,7 @@ getCollectionTriples state = none
 
 -- TODO: include use of BaseURL
 getResourceTriple :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
-getResourceTriple state = ((getName >>> arr (unode . s2b)) &&& (getAttrValue "rdf:resource" >>> arr (mkLiteralNode state))) >>> arr (attachSubject (stateSubject state))
+getResourceTriple state = ((getName >>> arr (unode . s2b)) &&& (getAttrValue "rdf:resource" >>> arr (unode . s2b))) >>> arr (attachSubject (stateSubject state))
 
 -- |Read a Node from the "rdf:about" property or generate a blank node
 mkNode :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Node
