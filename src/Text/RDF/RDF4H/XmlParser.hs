@@ -76,6 +76,7 @@ parsePredicatesFromChildren :: forall a. (ArrowXml a, ArrowState GParseState a) 
 parsePredicatesFromChildren = updateState
                           >>> choiceA [ second (hasAttrValue "rdf:parseType" (== "Literal")) :-> arr2A getLiteralTriple
                                       , second (hasAttrValue "rdf:parseType" (== "Collection")) :-> arr2A getCollectionTriples
+                                      , second (hasAttr "rdf:datatype") :-> arr2A getTypedTriple
                                       , second (hasAttr "rdf:resource") :-> arr2A getResourceTriple
                                       , this :-> proc (state, predXml) -> do
                                                       p <- arr(unode . s2b) <<< getName -< predXml
@@ -108,6 +109,10 @@ updateState = (ifA (second (hasAttr "rdf:lang")) (arr2A readLang) (arr id))
 getLiteralTriple :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
 getLiteralTriple state = ((getName >>> arr (unode . s2b)) &&& (xshow ( getChildren ) >>> arr (mkTypedLiteralNode state nodeType))) >>> arr (attachSubject (stateSubject state))
   where nodeType = mkFastString (s2b "http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral")
+
+-- |Read a Triple and it's type when rdf:datatype is available
+getTypedTriple :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
+getTypedTriple state = ((getName >>> arr (unode . s2b)) &&& (getAttrValue "rdf:datatype" &&& xshow (getChildren) >>> arr (\(t, v) -> lnode (typedL (s2b v) (mkFastString (s2b t)))))) >>> arr (attachSubject (stateSubject state))
 
 -- TODO
 getCollectionTriples :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
