@@ -323,7 +323,7 @@ test_parseXmlRDF_example14 = testParse
     \</rdf:RDF>"
     ( mkRdf [ Triple ((unode . s2b) "http://example.org/thing")
                      ((unode . s2b) "rdf:type")
-                     ((unode . s2b) "ex:Document")
+                     ((unode . s2b) "http://example.org/stuff/1.0/Document")
             , Triple ((unode . s2b) "http://example.org/thing")
                      ((unode . s2b) "dc:title")
                      (mkTextNode "A marvelous thing")
