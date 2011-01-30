@@ -106,7 +106,8 @@ updateState = (ifA (second (hasAttr "rdf:lang")) (arr2A readLang) (arr id))
 
 -- |Read a Triple with an rdf:parseType of Literal
 getLiteralTriple :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
-getLiteralTriple state = ((getName >>> arr (unode . s2b)) &&& (xshow ( getChildren ) >>> arr (mkLiteralNode state))) >>> arr (attachSubject (stateSubject state))
+getLiteralTriple state = ((getName >>> arr (unode . s2b)) &&& (xshow ( getChildren ) >>> arr (mkTypedLiteralNode state nodeType))) >>> arr (attachSubject (stateSubject state))
+  where nodeType = mkFastString (s2b "http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral")
 
 -- TODO
 getCollectionTriples :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
@@ -122,6 +123,10 @@ mkNode s = choiceA [ hasAttr "rdf:about" :-> (getAttrValue "rdf:about" >>> arr (
                    , hasAttr "rdf:resource" :-> (getAttrValue "rdf:resource" >>> arr (unode . s2b))
                    , this :-> mkBlankNode
                    ]
+
+mkTypedLiteralNode :: LParseState -> FastString -> String -> Node
+mkTypedLiteralNode (LParseState _ (Just lang) _) t content = (lnode (typedL (s2b content) t))
+mkTypedLiteralNode (LParseState _ Nothing _) t content = lnode (typedL (s2b content) t)
 
 -- |Use the given state to create a literal node
 mkLiteralNode :: LParseState -> String -> Node

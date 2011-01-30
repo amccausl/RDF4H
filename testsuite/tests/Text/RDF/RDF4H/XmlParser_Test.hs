@@ -27,6 +27,7 @@ import Data.RDF.TriplesGraph_Test
 import Text.RDF.RDF4H.XmlParser
 
 tests = [ testGroup "XmlParser:parseXmlRDF" [ testCase "simpleStriping1" test_simpleStriping1
+                                            , testCase "simpleStriping2" test_simpleStriping2
                                             , testCase "simpleSingleton1" test_simpleSingleton1
                                             , testCase "simpleSingleton2" test_simpleSingleton2
                                             , testCase "example07" test_parseXmlRDF_example07
@@ -57,7 +58,31 @@ test_simpleStriping1 = testParse
         \<dc:title>RDF/XML Syntax Specification (Revised)</dc:title>\
       \</rdf:Description>\
     \</rdf:RDF>"
-    ( mkRdf [ Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar") ((unode . s2b) "dc:title") (mkTextNode "RDF/XML Syntax Specification (Revised)") ]
+    ( mkRdf [ Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar")
+                     ((unode . s2b) "dc:title")
+                     (mkTextNode "RDF/XML Syntax Specification (Revised)") ]
+            Nothing
+            ( PrefixMappings (Map.fromList [ (s2b "dc", s2b "http://purl.org/dc/elements/1.1/")
+                                           , (s2b "rdf", s2b "http://www.w3.org/1999/02/22-rdf-syntax-ns#") ]) )
+    )
+
+test_simpleStriping2 = testParse
+    "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"\
+            \ xmlns:dc=\"http://purl.org/dc/elements/1.1/\">\
+      \<rdf:Description rdf:about=\"http://www.w3.org/TR/rdf-syntax-grammar\">\
+        \<dc:title>RDF/XML Syntax Specification (Revised)</dc:title>\
+      \</rdf:Description>\
+      \<rdf:Description rdf:about=\"http://example.org/buecher/baum\">\
+        \<dc:title>Der Baum</dc:title>\
+      \</rdf:Description>\
+    \</rdf:RDF>"
+    ( mkRdf [ Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar")
+                     ((unode . s2b) "dc:title")
+                     (mkTextNode "RDF/XML Syntax Specification (Revised)") 
+            , Triple ((unode . s2b) "http://example.org/buecher/baum")
+                     ((unode . s2b) "dc:title")
+                     (mkTextNode "Der Baum")
+            ]
             Nothing
             ( PrefixMappings (Map.fromList [ (s2b "dc", s2b "http://purl.org/dc/elements/1.1/")
                                            , (s2b "rdf", s2b "http://www.w3.org/1999/02/22-rdf-syntax-ns#") ]) )
@@ -69,7 +94,9 @@ test_simpleSingleton1 = testParse
       \<rdf:Description rdf:about=\"http://www.w3.org/TR/rdf-syntax-grammar\"\
                       \ dc:title=\"RDF/XML Syntax Specification (Revised)\"/>\
     \</rdf:RDF>"
-    ( mkRdf [ Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar") ((unode . s2b) "dc:title") (mkTextNode "RDF/XML Syntax Specification (Revised)") ]
+    ( mkRdf [ Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar")
+                     ((unode . s2b) "dc:title")
+                     (mkTextNode "RDF/XML Syntax Specification (Revised)") ]
             Nothing
             ( PrefixMappings (Map.fromList [ (s2b "dc", s2b "http://purl.org/dc/elements/1.1/")
                                            , (s2b "rdf", s2b "http://www.w3.org/1999/02/22-rdf-syntax-ns#") ]) )
@@ -82,8 +109,12 @@ test_simpleSingleton2 = testParse
                       \ dc:title=\"RDF/XML Syntax Specification (Revised)\"\
                       \ dc:subject=\"RDF\"/>\
     \</rdf:RDF>"
-    ( mkRdf [ Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar") ((unode . s2b) "dc:title") (mkTextNode "RDF/XML Syntax Specification (Revised)")
-            , Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar") ((unode . s2b) "dc:subject") (mkTextNode "RDF") ]
+    ( mkRdf [ Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar")
+                     ((unode . s2b) "dc:title")
+                     (mkTextNode "RDF/XML Syntax Specification (Revised)")
+            , Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar")
+                     ((unode . s2b) "dc:subject")
+                     (mkTextNode "RDF") ]
             Nothing
             ( PrefixMappings (Map.fromList [ (s2b "dc", s2b "http://purl.org/dc/elements/1.1/")
                                            , (s2b "rdf", s2b "http://www.w3.org/1999/02/22-rdf-syntax-ns#") ]) )
@@ -103,7 +134,9 @@ test_parseXmlRDF_example07 = testParse
         \</ex:editor>\
       \</rdf:Description>\
     \</rdf:RDF>"
-    ( mkRdf [ Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar") ((unode . s2b) "dc:title") (mkTextNode "RDF/XML Syntax Specification (Revised)")
+    ( mkRdf [ Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar")
+                     ((unode . s2b) "dc:title")
+                     (mkTextNode "RDF/XML Syntax Specification (Revised)")
             , Triple (BNodeGen 1) ((unode . s2b) "ex:fullName") (mkTextNode "Dave Beckett")
             , Triple (BNodeGen 1) ((unode . s2b) "ex:homePage") ((unode . s2b) "http://purl.org/net/dajobe/")
             , Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar") ((unode . s2b) "ex:editor") (BNodeGen 1)
@@ -129,12 +162,24 @@ test_parseXmlRDF_example08 = testParse
         \<dc:title xml:lang=\"en\">The Tree</dc:title>\
       \</rdf:Description>\
     \</rdf:RDF>"
-    ( mkRdf [ Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar") ((unode . s2b) "dc:title") (mkTextNode "RDF/XML Syntax Specification (Revised)")
-            , Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar") ((unode . s2b) "dc:title") (lnode (plainLL (s2b "RDF/XML Syntax Specification (Revised)") (s2b "en")))
-            , Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar") ((unode . s2b) "dc:title") (lnode (plainLL (s2b "RDF/XML Syntax Specification (Revised)") (s2b "en-US")))
-            , Triple ((unode . s2b) "http://example.org/buecher/baum") ((unode . s2b) "dc:title") (lnode (plainLL (s2b "Der Baum") (s2b "de")))
-            , Triple ((unode . s2b) "http://example.org/buecher/baum") ((unode . s2b) "dc:description") (lnode (plainLL (s2b "Das Buch ist außergewöhnlich") (s2b "de")))
-            , Triple ((unode . s2b) "http://example.org/buecher/baum") ((unode . s2b) "dc:title") (lnode (plainLL (s2b "The Tree") (s2b "en")))
+    ( mkRdf [ Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar")
+                     ((unode . s2b) "dc:title")
+                     (mkTextNode "RDF/XML Syntax Specification (Revised)")
+            , Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar")
+                     ((unode . s2b) "dc:title")
+                     (lnode (plainLL (s2b "RDF/XML Syntax Specification (Revised)") (s2b "en")))
+            , Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar")
+                     ((unode . s2b) "dc:title")
+                     (lnode (plainLL (s2b "RDF/XML Syntax Specification (Revised)") (s2b "en-US")))
+            , Triple ((unode . s2b) "http://example.org/buecher/baum")
+                     ((unode . s2b) "dc:title")
+                     (lnode (plainLL (s2b "Der Baum") (s2b "de")))
+            , Triple ((unode . s2b) "http://example.org/buecher/baum")
+                     ((unode . s2b) "dc:description")
+                     (lnode (plainLL (s2b "Das Buch ist außergewöhnlich") (s2b "de")))
+            , Triple ((unode . s2b) "http://example.org/buecher/baum")
+                     ((unode . s2b) "dc:title")
+                     (lnode (plainLL (s2b "The Tree") (s2b "en")))
             ]
             Nothing
             ( PrefixMappings (Map.fromList [ (s2b "dc", s2b "http://purl.org/dc/elements/1.1/")
@@ -156,8 +201,8 @@ test_parseXmlRDF_example09 = testParse
     ( mkRdf [ Triple ((unode . s2b) "http://example.org/item01")
                      ((unode . s2b) "ex:prop")
                      (lnode (typedL (s2b "<a:Box required=\"true\">\
-                                           \<a:widget size=\"10\" />\
-                                           \<a:grommit id=\"23\" />\
+                                           \<a:widget size=\"10\"/>\
+                                           \<a:grommit id=\"23\"/>\
                                          \</a:Box>")
                             (mkFastString (s2b "http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral"))))
             ]
@@ -198,10 +243,14 @@ test_parseXmlRDF_example11 = testParse
         \<ex:homePage rdf:resource=\"http://purl.org/net/dajobe/\"/>\
       \</rdf:Description>\
     \</rdf:RDF>"
-    ( mkRdf [ Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar") ((unode . s2b) "dc:title") (mkTextNode "RDF/XML Syntax Specification (Revised)")
+    ( mkRdf [ Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar")
+                     ((unode . s2b) "dc:title")
+                     (mkTextNode "RDF/XML Syntax Specification (Revised)")
             , Triple (mkBNode "abc") ((unode . s2b) "ex:fullName") (mkTextNode "Dave Beckett")
             , Triple (mkBNode "abc") ((unode . s2b) "ex:homePage") ((unode . s2b) "http://purl.org/net/dajobe/")
-            , Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar") ((unode . s2b) "ex:editor") (mkBNode "abc")
+            , Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar")
+                     ((unode . s2b) "ex:editor")
+                     (mkBNode "abc")
             ]
             Nothing
             ( PrefixMappings (Map.fromList [ (s2b "dc", s2b "http://purl.org/dc/elements/1.1/")
@@ -223,10 +272,14 @@ test_parseXmlRDF_example12 = testParse
         \</ex:editor>\
       \</rdf:Description>\
     \</rdf:RDF>"
-    ( mkRdf [ Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar") ((unode . s2b) "dc:title") (mkTextNode "RDF/XML Syntax Specification (Revised)")
+    ( mkRdf [ Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar")
+                     ((unode . s2b) "dc:title")
+                     (mkTextNode "RDF/XML Syntax Specification (Revised)")
             , Triple (BNodeGen 1) ((unode . s2b) "ex:fullName") (mkTextNode "Dave Beckett")
             , Triple (BNodeGen 1) ((unode . s2b) "ex:homePage") ((unode . s2b) "http://purl.org/net/dajobe/")
-            , Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar") ((unode . s2b) "ex:editor") (BNodeGen 1)
+            , Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar")
+                     ((unode . s2b) "ex:editor")
+                     (BNodeGen 1)
             ]
             Nothing
             ( PrefixMappings (Map.fromList [ (s2b "dc", s2b "http://purl.org/dc/elements/1.1/")
@@ -244,9 +297,13 @@ test_parseXmlRDF_example13 = testParse
         \<ex:editor ex:fullName=\"Dave Beckett\" />\
       \</rdf:Description>\
     \</rdf:RDF>"
-    ( mkRdf [ Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar") ((unode . s2b) "dc:title") (mkTextNode "RDF/XML Syntax Specification (Revised)")
+    ( mkRdf [ Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar")
+                     ((unode . s2b) "dc:title")
+                     (mkTextNode "RDF/XML Syntax Specification (Revised)")
             , Triple (BNodeGen 1) ((unode . s2b) "ex:fullName") (mkTextNode "Dave Beckett")
-            , Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar") ((unode . s2b) "ex:editor") (BNodeGen 1)
+            , Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar")
+                     ((unode . s2b) "ex:editor")
+                     (BNodeGen 1)
             ]
             Nothing
             ( PrefixMappings (Map.fromList [ (s2b "dc", s2b "http://purl.org/dc/elements/1.1/")
@@ -264,8 +321,12 @@ test_parseXmlRDF_example14 = testParse
         \<dc:title>A marvelous thing</dc:title>\
       \</rdf:Description>\
     \</rdf:RDF>"
-    ( mkRdf [ Triple ((unode . s2b) "http://example.org/thing") ((unode . s2b) "rdf:type") ((unode . s2b) "ex:Document")
-            , Triple ((unode . s2b) "http://example.org/thing") ((unode . s2b) "dc:title") (mkTextNode "A marvelous thing")
+    ( mkRdf [ Triple ((unode . s2b) "http://example.org/thing")
+                     ((unode . s2b) "rdf:type")
+                     ((unode . s2b) "ex:Document")
+            , Triple ((unode . s2b) "http://example.org/thing")
+                     ((unode . s2b) "dc:title")
+                     (mkTextNode "A marvelous thing")
             ]
             Nothing
             ( PrefixMappings (Map.fromList [ (s2b "dc", s2b "http://purl.org/dc/elements/1.1/")
@@ -281,8 +342,12 @@ test_parseXmlRDF_example15 = testParse
         \<dc:title>A marvelous thing</dc:title>\
       \</ex:Document>\
     \</rdf:RDF>"
-    ( mkRdf [ Triple ((unode . s2b) "http://example.org/thing") ((unode . s2b) "rdf:type") ((unode . s2b) "ex:Document")
-            , Triple ((unode . s2b) "http://example.org/thing") ((unode . s2b) "dc:title") (mkTextNode "A marvelous thing")
+    ( mkRdf [ Triple ((unode . s2b) "http://example.org/thing")
+                     ((unode . s2b) "rdf:type")
+                     ((unode . s2b) "ex:Document")
+            , Triple ((unode . s2b) "http://example.org/thing")
+                     ((unode . s2b) "dc:title")
+                     (mkTextNode "A marvelous thing")
             ]
             Nothing
             ( PrefixMappings (Map.fromList [ (s2b "dc", s2b "http://purl.org/dc/elements/1.1/")
