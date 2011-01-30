@@ -65,7 +65,7 @@ getRDF = proc xml -> do
 -- |Read an rdf:Description tag to its corresponding Triples
 parseDescription :: forall a. (ArrowXml a, ArrowState GParseState a) => a (LParseState, XmlTree) Triple
 parseDescription = updateState
-               >>> (arr2A parsePredicatesFromAttr <+> (second getChildren >>> parsePredicatesFromChildren))
+               >>> (arr2A parsePredicatesFromAttr <+> (second (getChildren >>> isElem) >>> parsePredicatesFromChildren))
 
 -- |Read the attributes of an rdf:Description element.  These correspond to the Predicate Object pairs of the Triple
 parsePredicatesFromAttr :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
@@ -79,18 +79,26 @@ parsePredicatesFromChildren = updateState
                                       , second (hasAttr "rdf:resource") :-> arr2A getResourceTriple
                                       , this :-> proc (state, predXml) -> do
                                                       p <- arr(unode . s2b) <<< getName -< predXml
-                                                      desc <- isElem <<< getChildren -< predXml
-                                                      o <- arr2A mkNode -< (state, desc)
-                                                      t0 <- arr (\(s, (p, o)) -> Triple s p o) -< (stateSubject state, (p, o))
-                                                      t <- arr fst <+> (parseDescription <<< arr snd) -< (t0, (state { stateSubject = o }, desc))
+                                                      t <- arr2A (\s -> arr2A (parseObjectsFromChildren s)) <<< second (second getChildren) -< (state, (p, predXml))
                                                       returnA -< t
                                       ]
+
+parseObjectsFromChildren :: forall a. (ArrowXml a, ArrowState GParseState a)
+                         => LParseState -> Predicate -> a XmlTree Triple
+parseObjectsFromChildren s p = (isText >>> getText >>> arr ((Triple (stateSubject s) p) . mkLiteralNode s))
+                           <+> (isElem >>> hasName "rdf:Description" >>> parseObjectDescription)
+  where parseObjectDescription = proc desc -> do
+                                      o <- mkNode s -< desc
+                                      t0 <- arr (\(sub, (p, o)) -> Triple sub p o) -< (stateSubject s, (p, o))
+                                      t <- arr fst <+> (parseDescription <<< arr snd) -< (t0, (s { stateSubject = o }, desc))
+                                      returnA -< t
 
 attachSubject :: Subject -> (Predicate, Object) -> Triple
 attachSubject s (p, o) = Triple s p o
 
 -- |Updates the local state at a given node
-updateState :: forall a. (ArrowXml a, ArrowState GParseState a) => a (LParseState, XmlTree) (LParseState, XmlTree)
+updateState :: forall a. (ArrowXml a, ArrowState GParseState a)
+            => a (LParseState, XmlTree) (LParseState, XmlTree)
 updateState = (ifA (second (hasAttr "rdf:lang")) (arr2A readLang) (arr id))
           >>> (ifA (second (hasAttr "xml:base")) (arr2A readBase) (arr id))
   where readLang state = (getAttrValue0 "rdf:lang" >>> arr (\lang -> state { stateLang = Just lang } ) ) &&& arr id
