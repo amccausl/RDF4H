@@ -52,15 +52,22 @@ addMetaData bUrlM dUrlM = mkelem "/"
 -- |Arrow that translates HXT XmlTree to an RDF representation
 getRDF :: forall rdf a. (RDF rdf, ArrowXml a, ArrowState GParseState a) => a XmlTree rdf
 getRDF = proc xml -> do
-              rdf <- hasName "rdf:RDF" <<< isElem <<< getChildren                -< xml
-              bUrl <- arr (Just . BaseUrl . s2b) <<< getAttrValue "transfer-URI" -< xml
-              prefixMap <- arr toPrefixMap <<< toAttrMap                         -< rdf
-              desc <- isElem <<< getChildren                                     -< rdf
-              state <- arr (\(bUrl, o) -> LParseState bUrl Nothing o) <<< second(mkNode (LParseState Nothing Nothing undefined)) -< (bUrl, desc)
-              triples <- parseDescription >. id -< (state, desc)
-              returnA -< mkRdf triples bUrl prefixMap
+              rdf <- hasName "rdf:RDF" <<< isElem <<< getChildren         -< xml
+              bUrl <- arr (BaseUrl . s2b) <<< getAttrValue "transfer-URI" -< xml
+              prefixMap <- arr toPrefixMap <<< toAttrMap                  -< rdf
+              triples <- parseDescription' >. id -< (Just bUrl, rdf)
+              returnA -< mkRdf triples (Just bUrl) prefixMap
   where toAttrMap = (getAttrl >>> (getName &&& (getChildren >>> getText))) >. id
         toPrefixMap = PrefixMappings . Map.fromList . map (\(n, m) -> (s2b (drop 6 n), s2b m)) . filter (startswith "xmlns:" . fst)
+
+-- |Read the initial state from an rdf element
+parseDescription' :: forall a. (ArrowXml a, ArrowState GParseState a) => a (Maybe BaseUrl, XmlTree) Triple
+parseDescription' = proc (bUrl, rdf) -> do
+                         desc <- isElem <<< getChildren -< rdf
+                         state <- arr (\(bUrl, o) -> LParseState bUrl Nothing o) <<< second(mkNode (LParseState Nothing Nothing undefined)) -< (bUrl, desc)
+                         triple <- parseDescription -< (state, desc)
+                         returnA -< triple
+
 
 -- |Read an rdf:Description tag to its corresponding Triples
 parseDescription :: forall a. (ArrowXml a, ArrowState GParseState a) => a (LParseState, XmlTree) Triple
