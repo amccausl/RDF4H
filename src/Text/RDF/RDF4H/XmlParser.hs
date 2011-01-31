@@ -12,6 +12,7 @@ import Data.RDF
 import Control.Arrow
 
 import Text.XML.HXT.Core
+import Text.XML.HXT.Arrow.XmlState (expandURI)
 
 import Data.ByteString.Lazy.Char8(ByteString)
 import Data.String.Utils
@@ -21,7 +22,7 @@ data GParseState = GParseState { stateGenId :: Int
                                }
 
 -- |Local state for the parser (dependant on the parent xml elements)
-data LParseState = LParseState { stateBaseUrl :: Maybe BaseUrl
+data LParseState = LParseState { stateBaseUrl :: BaseUrl
                                , stateLang :: Maybe String
                                , stateSubject :: Subject
                                }
@@ -53,21 +54,20 @@ addMetaData bUrlM dUrlM = mkelem "/"
 getRDF :: forall rdf a. (RDF rdf, ArrowXml a, ArrowState GParseState a) => a XmlTree rdf
 getRDF = proc xml -> do
               rdf <- hasName "rdf:RDF" <<< isElem <<< getChildren         -< xml
-              bUrl <- arr (BaseUrl . s2b) <<< getAttrValue "transfer-URI" -< xml
+              bUrl <- arr (BaseUrl . s2b) <<< ((getAttrValue0 "xml:base" <<< isElem <<< getChildren) `orElse` getAttrValue "transfer-URI") -< xml
               prefixMap <- arr toPrefixMap <<< toAttrMap                  -< rdf
-              triples <- parseDescription' >. id -< (Just bUrl, rdf)
+              triples <- parseDescription' >. id -< (bUrl, rdf)
               returnA -< mkRdf triples (Just bUrl) prefixMap
   where toAttrMap = (getAttrl >>> (getName &&& (getChildren >>> getText))) >. id
         toPrefixMap = PrefixMappings . Map.fromList . map (\(n, m) -> (s2b (drop 6 n), s2b m)) . filter (startswith "xmlns:" . fst)
 
 -- |Read the initial state from an rdf element
-parseDescription' :: forall a. (ArrowXml a, ArrowState GParseState a) => a (Maybe BaseUrl, XmlTree) Triple
+parseDescription' :: forall a. (ArrowXml a, ArrowState GParseState a) => a (BaseUrl, XmlTree) Triple
 parseDescription' = proc (bUrl, rdf) -> do
                          desc <- isElem <<< getChildren -< rdf
-                         state <- arr (\(bUrl, o) -> LParseState bUrl Nothing o) <<< second(mkNode (LParseState Nothing Nothing undefined)) -< (bUrl, desc)
+                         state <- arr (\(s, o) -> s { stateSubject = o }) <<< arr fst &&& arr2A mkNode -< (LParseState bUrl Nothing undefined, desc)
                          triple <- parseDescription -< (state, desc)
                          returnA -< triple
-
 
 -- |Read an rdf:Description tag to its corresponding Triples
 parseDescription :: forall a. (ArrowXml a, ArrowState GParseState a) => a (LParseState, XmlTree) Triple
@@ -83,6 +83,7 @@ parsePredicatesFromAttr :: forall a. (ArrowXml a, ArrowState GParseState a) => L
 parsePredicatesFromAttr s = getAttrl >>> ((getName
                                             >>> isA (/= "rdf:about")
                                             >>> isA (/= "rdf:nodeID")
+                                            >>> isA (/= "rdf:ID")
                                             >>> isA (/= "xml:lang")
                                             >>> (arr (unode . s2b)))
                                         &&& (getChildren >>> getText >>> arr (lnode . plainL . s2b))) >>> arr (attachSubject (stateSubject s))
@@ -90,8 +91,9 @@ parsePredicatesFromAttr s = getAttrl >>> ((getName
 -- |Read a children of an rdf:Description element.  These correspond to the Predicate portion of the Triple
 parsePredicatesFromChildren :: forall a. (ArrowXml a, ArrowState GParseState a) => a (LParseState, XmlTree) Triple
 parsePredicatesFromChildren = updateState
-                          >>> choiceA [ second (hasAttrValue "rdf:parseType" (== "Literal")) :-> arr2A getLiteralTriple
-                                      , second (hasAttrValue "rdf:parseType" (== "Collection")) :-> arr2A getCollectionTriples
+                          >>> choiceA [ second (hasAttrValue "rdf:parseType" (== "Literal")) :-> arr2A parseAsLiteralTriple
+                                      , second (hasAttrValue "rdf:parseType" (== "Collection")) :-> arr2A parseAsCollectionTriples
+                                      , second (hasAttrValue "rdf:parseType" (== "Resource")) :-> arr2A parseAsResourceTriples
                                       , second (hasAttr "rdf:datatype") :-> arr2A getTypedTriple
                                       , second (hasAttr "rdf:resource") :-> arr2A getResourceTriple
                                       , second (hasAttr "rdf:nodeID") :-> arr2A getNodeIdTriple
@@ -120,36 +122,42 @@ updateState :: forall a. (ArrowXml a, ArrowState GParseState a)
 updateState = (ifA (second (hasAttr "xml:lang")) (arr2A readLang) (arr id))
           >>> (ifA (second (hasAttr "xml:base")) (arr2A readBase) (arr id))
   where readLang state = (getAttrValue0 "xml:lang" >>> arr (\lang -> state { stateLang = Just lang } ) ) &&& arr id
-        readBase state = (getAttrValue0 "xml:base" >>> arr (\base -> state { stateBaseUrl = (Just . BaseUrl . s2b) base } ) ) &&& arr id
+        readBase state = (getAttrValue0 "xml:base" >>> arr (\base -> state { stateBaseUrl = (BaseUrl . s2b) base } ) ) &&& arr id
 
 -- |Read a Triple with an rdf:parseType of Literal
-getLiteralTriple :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
-getLiteralTriple state = ((getName >>> arr (unode . s2b)) &&& (xshow ( getChildren ) >>> arr (mkTypedLiteralNode state nodeType))) >>> arr (attachSubject (stateSubject state))
+parseAsLiteralTriple :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
+parseAsLiteralTriple state = ((getName >>> arr (unode . s2b)) &&& (xshow ( getChildren ) >>> arr (mkTypedLiteralNode state nodeType))) >>> arr (attachSubject (stateSubject state))
   where nodeType = mkFastString (s2b "http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral")
+
+-- TODO
+parseAsCollectionTriples :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
+parseAsCollectionTriples state = none
+
+parseAsResourceTriples :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
+parseAsResourceTriples state = ((getName >>> arr (unode . s2b)) &&& (getAttrValue "rdf:resource" >>> arr (unode . s2b))) >>> arr (attachSubject (stateSubject state))
 
 -- |Read a Triple and it's type when rdf:datatype is available
 getTypedTriple :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
-getTypedTriple state = ((getName >>> arr (unode . s2b)) &&& (getAttrValue "rdf:datatype" &&& xshow (getChildren) >>> arr (\(t, v) -> lnode (typedL (s2b v) (mkFastString (s2b t)))))) >>> arr (attachSubject (stateSubject state))
+getTypedTriple state = ((getName >>> arr (unode . s2b)) &&& ((getAttrValue "rdf:datatype" &&& baseUrl >>> expandURI) &&& xshow (getChildren) >>> arr (\(t, v) -> lnode (typedL (s2b v) (mkFastString (s2b t)))))) >>> arr (attachSubject (stateSubject state))
+  where baseUrl = constA (case stateBaseUrl state of BaseUrl b -> b2s b)
 
--- TODO
-getCollectionTriples :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
-getCollectionTriples state = none
-
--- TODO: include use of BaseURL
 getResourceTriple :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
-getResourceTriple state = ((getName >>> arr (unode . s2b)) &&& (getAttrValue "rdf:resource" >>> arr (unode . s2b))) >>> arr (attachSubject (stateSubject state))
+getResourceTriple state = ((getName >>> arr (unode . s2b)) &&& ((getAttrValue "rdf:resource" &&& baseUrl) >>> expandURI >>> arr (unode . s2b))) >>> arr (attachSubject (stateSubject state))
+  where baseUrl = constA (case stateBaseUrl state of BaseUrl b -> b2s b)
 
 getNodeIdTriple :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
 getNodeIdTriple state = ((getName >>> arr (unode . s2b)) &&& (getAttrValue "rdf:nodeID" >>> arr (bnode . s2b))) >>> arr (attachSubject (stateSubject state))
 
-
 -- |Read a Node from the "rdf:about" property or generate a blank node
 mkNode :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Node
-mkNode s = choiceA [ hasAttr "rdf:about" :-> (getAttrValue "rdf:about" >>> arr (unode . s2b))
-                   , hasAttr "rdf:resource" :-> (getAttrValue "rdf:resource" >>> arr (unode . s2b))
+mkNode s = choiceA [ hasAttr "rdf:about" :-> (getAttrValue "rdf:about" &&& baseUrl >>> expandURI >>> arr (unode . s2b))
+                   , hasAttr "rdf:resource" :-> (getAttrValue "rdf:resource" &&& baseUrl >>> expandURI >>> arr (unode . s2b))
                    , hasAttr "rdf:nodeID" :-> (getAttrValue "rdf:nodeID" >>> arr (bnode . s2b))
+                   , hasAttr "rdf:ID" :-> ((getAttrValue "rdf:ID" >>> arr (\x -> '#':x)) &&& baseUrl >>> expandURI >>> arr (unode . s2b))
                    , this :-> mkBlankNode
                    ]
+  where attrToUnode attr = getAttrValue attr >>> arr (unode . s2b)
+        baseUrl = constA (case stateBaseUrl s of BaseUrl b -> b2s b)
 
 mkTypedLiteralNode :: LParseState -> FastString -> String -> Node
 mkTypedLiteralNode (LParseState _ (Just lang) _) t content = (lnode (typedL (s2b content) t))
