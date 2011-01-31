@@ -80,7 +80,12 @@ parseDescription = updateState
 
 -- |Read the attributes of an rdf:Description element.  These correspond to the Predicate Object pairs of the Triple
 parsePredicatesFromAttr :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
-parsePredicatesFromAttr s = getAttrl >>> ((getName >>> isA (/= "rdf:about") >>> isA (/= "rdf:nodeID") >>> (arr (unode . s2b))) &&& (getChildren >>> getText >>> arr (lnode . plainL . s2b))) >>> arr (attachSubject (stateSubject s))
+parsePredicatesFromAttr s = getAttrl >>> ((getName
+                                            >>> isA (/= "rdf:about")
+                                            >>> isA (/= "rdf:nodeID")
+                                            >>> isA (/= "xml:lang")
+                                            >>> (arr (unode . s2b)))
+                                        &&& (getChildren >>> getText >>> arr (lnode . plainL . s2b))) >>> arr (attachSubject (stateSubject s))
 
 -- |Read a children of an rdf:Description element.  These correspond to the Predicate portion of the Triple
 parsePredicatesFromChildren :: forall a. (ArrowXml a, ArrowState GParseState a) => a (LParseState, XmlTree) Triple
@@ -112,9 +117,9 @@ attachSubject s (p, o) = Triple s p o
 -- |Updates the local state at a given node
 updateState :: forall a. (ArrowXml a, ArrowState GParseState a)
             => a (LParseState, XmlTree) (LParseState, XmlTree)
-updateState = (ifA (second (hasAttr "rdf:lang")) (arr2A readLang) (arr id))
+updateState = (ifA (second (hasAttr "xml:lang")) (arr2A readLang) (arr id))
           >>> (ifA (second (hasAttr "xml:base")) (arr2A readBase) (arr id))
-  where readLang state = (getAttrValue0 "rdf:lang" >>> arr (\lang -> state { stateLang = Just lang } ) ) &&& arr id
+  where readLang state = (getAttrValue0 "xml:lang" >>> arr (\lang -> state { stateLang = Just lang } ) ) &&& arr id
         readBase state = (getAttrValue0 "xml:base" >>> arr (\base -> state { stateBaseUrl = (Just . BaseUrl . s2b) base } ) ) &&& arr id
 
 -- |Read a Triple with an rdf:parseType of Literal
