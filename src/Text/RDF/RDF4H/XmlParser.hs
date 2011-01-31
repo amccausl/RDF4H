@@ -80,7 +80,7 @@ parseDescription = updateState
 
 -- |Read the attributes of an rdf:Description element.  These correspond to the Predicate Object pairs of the Triple
 parsePredicatesFromAttr :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
-parsePredicatesFromAttr s = getAttrl >>> ((getName >>> isA (/= "rdf:about") >>> (arr (unode . s2b))) &&& (getChildren >>> getText >>> arr (lnode . plainL . s2b))) >>> arr (attachSubject (stateSubject s))
+parsePredicatesFromAttr s = getAttrl >>> ((getName >>> isA (/= "rdf:about") >>> isA (/= "rdf:nodeID") >>> (arr (unode . s2b))) &&& (getChildren >>> getText >>> arr (lnode . plainL . s2b))) >>> arr (attachSubject (stateSubject s))
 
 -- |Read a children of an rdf:Description element.  These correspond to the Predicate portion of the Triple
 parsePredicatesFromChildren :: forall a. (ArrowXml a, ArrowState GParseState a) => a (LParseState, XmlTree) Triple
@@ -89,6 +89,7 @@ parsePredicatesFromChildren = updateState
                                       , second (hasAttrValue "rdf:parseType" (== "Collection")) :-> arr2A getCollectionTriples
                                       , second (hasAttr "rdf:datatype") :-> arr2A getTypedTriple
                                       , second (hasAttr "rdf:resource") :-> arr2A getResourceTriple
+                                      , second (hasAttr "rdf:nodeID") :-> arr2A getNodeIdTriple
                                       , this :-> proc (state, predXml) -> do
                                                       p <- arr(unode . s2b) <<< getName -< predXml
                                                       t <- arr2A (\s -> arr2A (parseObjectsFromChildren s)) <<< second (second getChildren) -< (state, (p, predXml))
@@ -133,10 +134,15 @@ getCollectionTriples state = none
 getResourceTriple :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
 getResourceTriple state = ((getName >>> arr (unode . s2b)) &&& (getAttrValue "rdf:resource" >>> arr (unode . s2b))) >>> arr (attachSubject (stateSubject state))
 
+getNodeIdTriple :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
+getNodeIdTriple state = ((getName >>> arr (unode . s2b)) &&& (getAttrValue "rdf:nodeID" >>> arr (bnode . s2b))) >>> arr (attachSubject (stateSubject state))
+
+
 -- |Read a Node from the "rdf:about" property or generate a blank node
 mkNode :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Node
 mkNode s = choiceA [ hasAttr "rdf:about" :-> (getAttrValue "rdf:about" >>> arr (unode . s2b))
                    , hasAttr "rdf:resource" :-> (getAttrValue "rdf:resource" >>> arr (unode . s2b))
+                   , hasAttr "rdf:nodeID" :-> (getAttrValue "rdf:nodeID" >>> arr (bnode . s2b))
                    , this :-> mkBlankNode
                    ]
 
