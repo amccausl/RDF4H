@@ -65,7 +65,11 @@ getRDF = proc xml -> do
 -- |Read an rdf:Description tag to its corresponding Triples
 parseDescription :: forall a. (ArrowXml a, ArrowState GParseState a) => a (LParseState, XmlTree) Triple
 parseDescription = updateState
-               >>> (arr2A parsePredicatesFromAttr <+> (second (getChildren >>> isElem) >>> parsePredicatesFromChildren))
+               >>> (arr2A parsePredicatesFromAttr
+                   <+> (second (getChildren >>> isElem) >>> parsePredicatesFromChildren)
+                   <+> (second (neg (hasName "rdf:Description")) >>> arr2A readTypeTriple)) -- If the rdf:Description element has another name, that is it's type
+  where readTypeTriple :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
+        readTypeTriple state = getName >>> arr ((Triple (stateSubject state) ((unode . s2b) "rdf:type")) . unode . s2b)
 
 -- |Read the attributes of an rdf:Description element.  These correspond to the Predicate Object pairs of the Triple
 parsePredicatesFromAttr :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
@@ -87,7 +91,7 @@ parsePredicatesFromChildren = updateState
 parseObjectsFromChildren :: forall a. (ArrowXml a, ArrowState GParseState a)
                          => LParseState -> Predicate -> a XmlTree Triple
 parseObjectsFromChildren s p = (isText >>> getText >>> arr ((Triple (stateSubject s) p) . mkLiteralNode s))
-                           <+> (isElem >>> hasName "rdf:Description" >>> parseObjectDescription)
+                           <+> (isElem >>> hasName "rdf:Description" >>> parseObjectDescription) -- TODO: include ability to alias for rdf:type
   where parseObjectDescription = proc desc -> do
                                       o <- mkNode s -< desc
                                       t0 <- arr (\(sub, (p, o)) -> Triple sub p o) -< (stateSubject s, (p, o))
