@@ -44,11 +44,13 @@ tests = [ testGroup "XmlParser:parseXmlRDF" [ testCase "simpleStriping1" test_si
                                             , testCase "example18" test_parseXmlRDF_example18
                                             , testCase "example19" test_parseXmlRDF_example19
                                             , testCase "example20" test_parseXmlRDF_example20
+                                            , testCase "vCardPersonal" test_parseXmlRDF_vCardPersonal
                                             ]
         ]
 
 mkTextNode = lnode . plainL . s2b
-testParse exRDF ex = assertBool ("expected: " ++ show ex ++ "but got: " ++ show parsed) (isIsomorphic (parsed :: TriplesGraph) (ex :: TriplesGraph))
+testParse exRDF ex = assertBool ("expected: " ++ show ex ++ "but got: " ++ show parsed)
+                                (isIsomorphic (parsed :: TriplesGraph) (ex :: TriplesGraph))
   where parsed = case parseXmlRDF Nothing Nothing (s2b exRDF) of Right result -> result
 
 test_simpleStriping1 = testParse
@@ -300,7 +302,9 @@ test_parseXmlRDF_example13 = testParse
     ( mkRdf [ Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar")
                      ((unode . s2b) "dc:title")
                      (mkTextNode "RDF/XML Syntax Specification (Revised)")
-            , Triple (BNodeGen 1) ((unode . s2b) "ex:fullName") (mkTextNode "Dave Beckett")
+            , Triple (BNodeGen 1)
+                     ((unode . s2b) "ex:fullName")
+                     (mkTextNode "Dave Beckett")
             , Triple ((unode . s2b) "http://www.w3.org/TR/rdf-syntax-grammar")
                      ((unode . s2b) "ex:editor")
                      (BNodeGen 1)
@@ -380,10 +384,18 @@ test_parseXmlRDF_example17 = testParse
         \<rdf:_3 rdf:resource=\"http://example.org/pear\"/>\
       \</rdf:Seq>\
     \</rdf:RDF>"
-    ( mkRdf [ Triple ((unode . s2b) "http://example.org/favourite-fruit") ((unode . s2b) "rdf:type") ((unode . s2b) "rdf:Seq")
-            , Triple ((unode . s2b) "http://example.org/favourite-fruit") ((unode . s2b) "rdf:_1") ((unode . s2b) "http://example.org/banana")
-            , Triple ((unode . s2b) "http://example.org/favourite-fruit") ((unode . s2b) "rdf:_2") ((unode . s2b) "http://example.org/apple")
-            , Triple ((unode . s2b) "http://example.org/favourite-fruit") ((unode . s2b) "rdf:_3") ((unode . s2b) "http://example.org/pear")
+    ( mkRdf [ Triple ((unode . s2b) "http://example.org/favourite-fruit")
+                     ((unode . s2b) "rdf:type")
+                     ((unode . s2b) "rdf:Seq")
+            , Triple ((unode . s2b) "http://example.org/favourite-fruit")
+                     ((unode . s2b) "rdf:_1")
+                     ((unode . s2b) "http://example.org/banana")
+            , Triple ((unode . s2b) "http://example.org/favourite-fruit")
+                     ((unode . s2b) "rdf:_2")
+                     ((unode . s2b) "http://example.org/apple")
+            , Triple ((unode . s2b) "http://example.org/favourite-fruit")
+                     ((unode . s2b) "rdf:_3")
+                     ((unode . s2b) "http://example.org/pear")
             ]
             Nothing
             ( PrefixMappings (Map.fromList [ (s2b "rdf", s2b "http://www.w3.org/1999/02/22-rdf-syntax-ns#") ]) )
@@ -397,10 +409,18 @@ test_parseXmlRDF_example18 = testParse
         \<rdf:li rdf:resource=\"http://example.org/pear\"/>\
       \</rdf:Seq>\
     \</rdf:RDF>"
-    ( mkRdf [ Triple ((unode . s2b) "http://example.org/favourite-fruit") ((unode . s2b) "rdf:type") ((unode . s2b) "rdf:Seq")
-            , Triple ((unode . s2b) "http://example.org/favourite-fruit") ((unode . s2b) "rdf:_1") ((unode . s2b) "http://example.org/banana")
-            , Triple ((unode . s2b) "http://example.org/favourite-fruit") ((unode . s2b) "rdf:_2") ((unode . s2b) "http://example.org/apple")
-            , Triple ((unode . s2b) "http://example.org/favourite-fruit") ((unode . s2b) "rdf:_3") ((unode . s2b) "http://example.org/pear")
+    ( mkRdf [ Triple ((unode . s2b) "http://example.org/favourite-fruit")
+                     ((unode . s2b) "rdf:type")
+                     ((unode . s2b) "rdf:Seq")
+            , Triple ((unode . s2b) "http://example.org/favourite-fruit")
+                     ((unode . s2b) "rdf:_1")
+                     ((unode . s2b) "http://example.org/banana")
+            , Triple ((unode . s2b) "http://example.org/favourite-fruit")
+                     ((unode . s2b) "rdf:_2")
+                     ((unode . s2b) "http://example.org/apple")
+            , Triple ((unode . s2b) "http://example.org/favourite-fruit")
+                     ((unode . s2b) "rdf:_3")
+                     ((unode . s2b) "http://example.org/pear")
             ]
             Nothing
             ( PrefixMappings (Map.fromList [ (s2b "rdf", s2b "http://www.w3.org/1999/02/22-rdf-syntax-ns#") ]) )
@@ -419,12 +439,24 @@ test_parseXmlRDF_example19 = testParse
       \</rdf:Description>\
     \</rdf:RDF>"
     ( mkRdf [ Triple ((unode . s2b) "http://example.org/basket") ((unode . s2b) "ex:hasFruit") (BNodeGen 1)
-            , Triple (BNodeGen 1) ((unode . s2b) "rdf:first") ((unode . s2b) "http://example.org/banana")
-            , Triple (BNodeGen 1) ((unode . s2b) "rdf:rest") (BNodeGen 2)
-            , Triple (BNodeGen 2) ((unode . s2b) "rdf:first") ((unode . s2b) "http://example.org/apple")
-            , Triple (BNodeGen 2) ((unode . s2b) "rdf:rest") (BNodeGen 3)
-            , Triple (BNodeGen 3) ((unode . s2b) "rdf:first") ((unode . s2b) "http://example.org/pear")
-            , Triple (BNodeGen 3) ((unode . s2b) "rdf:rest") ((unode . s2b) "rdf:nil")
+            , Triple (BNodeGen 1)
+                     ((unode . s2b) "rdf:first")
+                     ((unode . s2b) "http://example.org/banana")
+            , Triple (BNodeGen 1)
+                     ((unode . s2b) "rdf:rest")
+                     (BNodeGen 2)
+            , Triple (BNodeGen 2)
+                     ((unode . s2b) "rdf:first")
+                     ((unode . s2b) "http://example.org/apple")
+            , Triple (BNodeGen 2)
+                     ((unode . s2b) "rdf:rest")
+                     (BNodeGen 3)
+            , Triple (BNodeGen 3)
+                     ((unode . s2b) "rdf:first")
+                     ((unode . s2b) "http://example.org/pear")
+            , Triple (BNodeGen 3)
+                     ((unode . s2b) "rdf:rest")
+                     ((unode . s2b) "rdf:nil")
             ]
             Nothing
             ( PrefixMappings (Map.fromList [ (s2b "ex", s2b "http://example.org/stuff/1.0/")
@@ -440,14 +472,96 @@ test_parseXmlRDF_example20 = testParse
         \<ex:prop rdf:ID=\"triple1\">blah</ex:prop>\
       \</rdf:Description>\
     \</rdf:RDF>"
-    ( mkRdf [ Triple ((unode . s2b) "http://example.org/") ((unode . s2b) "ex:prop") (mkTextNode "blah")
-            , Triple ((unode . s2b) "http://example.org/triples/#triple1") ((unode . s2b) "rdf:type") ((unode . s2b) "rdf:Statement")
-            , Triple ((unode . s2b) "http://example.org/triples/#triple1") ((unode . s2b) "rdf:subject") ((unode . s2b) "http://example.org/")
-            , Triple ((unode . s2b) "http://example.org/triples/#triple1") ((unode . s2b) "rdf:predicate") ((unode . s2b) "ex:prop")
-            , Triple ((unode . s2b) "http://example.org/triples/#triple1") ((unode . s2b) "rdf:object") (mkTextNode "blah")
+    ( mkRdf [ Triple ((unode . s2b) "http://example.org/")
+                     ((unode . s2b) "ex:prop")
+                     (mkTextNode "blah")
+            , Triple ((unode . s2b) "http://example.org/triples/#triple1")
+                     ((unode . s2b) "rdf:type")
+                     ((unode . s2b) "rdf:Statement")
+            , Triple ((unode . s2b) "http://example.org/triples/#triple1")
+                     ((unode . s2b) "rdf:subject")
+                     ((unode . s2b) "http://example.org/")
+            , Triple ((unode . s2b) "http://example.org/triples/#triple1")
+                     ((unode . s2b) "rdf:predicate")
+                     ((unode . s2b) "ex:prop")
+            , Triple ((unode . s2b) "http://example.org/triples/#triple1")
+                     ((unode . s2b) "rdf:object")
+                     (mkTextNode "blah")
             ]
             ( Just (BaseUrl (s2b "http://example.org/here/")) )
             ( PrefixMappings (Map.fromList [ (s2b "ex", s2b "http://example.org/stuff/1.0/")
                                            , (s2b "rdf", s2b "http://www.w3.org/1999/02/22-rdf-syntax-ns#") ]) )
     )
 
+test_parseXmlRDF_vCardPersonal = testParse
+    "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"\
+            \ xmlns:v=\"http://www.w3.org/2006/vcard/ns#\">\
+      \<v:VCard rdf:about = \"http://example.com/me/corky\" >\
+        \<v:fn>Corky Crystal</v:fn>\
+        \<v:nickname>Corks</v:nickname>\
+        \<v:tel>\
+          \<rdf:Description>\
+            \<rdf:value>+61 7 5555 5555</rdf:value>\
+            \<rdf:type rdf:resource=\"http://www.w3.org/2006/vcard/ns#Home\"/>\
+            \<rdf:type rdf:resource=\"http://www.w3.org/2006/vcard/ns#Voice\"/>\
+          \</rdf:Description>\
+        \</v:tel>\
+        \<v:email rdf:resource=\"mailto:corky@example.com\"/>\
+        \<v:adr>\
+          \<rdf:Description>\
+            \<v:street-address>111 Lake Drive</v:street-address>\
+            \<v:locality>WonderCity</v:locality>\
+            \<v:postal-code>5555</v:postal-code>\
+            \<v:country-name>Australia</v:country-name>\
+            \<rdf:type rdf:resource=\"http://www.w3.org/2006/vcard/ns#Home\"/>\
+          \</rdf:Description>\
+        \</v:adr>\
+      \</v:VCard>\
+    \</rdf:RDF>"
+    ( mkRdf [ Triple ((unode . s2b) "http://example.com/me/corky")
+                     ((unode . s2b) "rdf:type")
+                     ((unode . s2b) "v:VCard")
+            , Triple ((unode . s2b) "http://example.com/me/corky")
+                     ((unode . s2b) "v:fn")
+                     (mkTextNode "Corky Crystal")
+            , Triple ((unode . s2b) "http://example.com/me/corky")
+                     ((unode . s2b) "v:nickname")
+                     (mkTextNode "Corks")
+            , Triple ((unode . s2b) "http://example.com/me/corky")
+                     ((unode . s2b) "v:tel")
+                     (BNodeGen 1)
+            , Triple (BNodeGen 1)
+                     ((unode . s2b) "rdf:value")
+                     (mkTextNode "+61 7 5555 5555")
+            , Triple (BNodeGen 1)
+                     ((unode . s2b) "rdf:type")
+                     ((unode . s2b) "http://www.w3.org/2006/vcard/ns#Home")
+            , Triple (BNodeGen 1)
+                     ((unode . s2b) "rdf:type")
+                     ((unode . s2b) "http://www.w3.org/2006/vcard/ns#Voice")
+            , Triple ((unode . s2b) "http://example.com/me/corky")
+                     ((unode . s2b) "v:email")
+                     ((unode . s2b) "mailto:corky@example.com")
+            , Triple ((unode . s2b) "http://example.com/me/corky")
+                     ((unode . s2b) "v:adr")
+                     (BNodeGen 2)
+            , Triple (BNodeGen 2)
+                     ((unode . s2b) "v:street-address")
+                     (mkTextNode "111 Lake Drive")
+            , Triple (BNodeGen 2)
+                     ((unode . s2b) "v:locality")
+                     (mkTextNode "WonderCity")
+            , Triple (BNodeGen 2)
+                     ((unode . s2b) "v:postal-code")
+                     (mkTextNode "5555")
+            , Triple (BNodeGen 2)
+                     ((unode . s2b) "v:country-name")
+                     (mkTextNode "Australia")
+            , Triple (BNodeGen 2)
+                     ((unode . s2b) "rdf:type")
+                     ((unode . s2b) "http://www.w3.org/2006/vcard/ns#Home")
+            ]
+            Nothing
+            ( PrefixMappings (Map.fromList [ (s2b "v", s2b "http://www.w3.org/2006/vcard/ns#")
+                                           , (s2b "rdf", s2b "http://www.w3.org/1999/02/22-rdf-syntax-ns#") ]) )
+    )
