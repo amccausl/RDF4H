@@ -71,12 +71,16 @@ parseDescription' = proc (bUrl, rdf) -> do
 
 -- |Read an rdf:Description tag to its corresponding Triples
 parseDescription :: forall a. (ArrowXml a, ArrowState GParseState a) => a (LParseState, XmlTree) Triple
-parseDescription = updateState
+parseDescription = (updateState
                >>> (arr2A parsePredicatesFromAttr
                    <+> (second (getChildren >>> isElem) >>> parsePredicatesFromChildren)
-                   <+> (second (neg (hasName "rdf:Description")) >>> arr2A readTypeTriple)) -- If the rdf:Description element has another name, that is it's type
+                   <+> (second (neg (hasName "rdf:Description")) >>> arr2A readTypeTriple))) -- If the rdf:Description element has another name, that is it's type
+               >>. (replaceLiElems [] 1)
   where readTypeTriple :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
         readTypeTriple state = getName >>> arr ((Triple (stateSubject state) ((unode . s2b) "rdf:type")) . unode . s2b)
+        replaceLiElems acc n (Triple s p o : rest) | p == (unode . s2b) "rdf:li" = replaceLiElems (Triple s ((unode . s2b) ("rdf:_" ++ show n)) o : acc) (n + 1) rest
+        replaceLiElems acc n (Triple s p o : rest) = replaceLiElems (Triple s p o : acc) n rest
+        replaceLiElems acc n [] = acc
 
 -- |Read the attributes of an rdf:Description element.  These correspond to the Predicate Object pairs of the Triple
 parsePredicatesFromAttr :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
