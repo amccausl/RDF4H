@@ -97,6 +97,7 @@ parsePredicatesFromChildren = updateState
                                       , second (hasAttr "rdf:datatype") :-> arr2A getTypedTriple
                                       , second (hasAttr "rdf:resource") :-> arr2A getResourceTriple
                                       , second (hasAttr "rdf:nodeID") :-> arr2A getNodeIdTriple
+                                      , second (hasAttr "rdf:ID") :-> (arr2A mkRelativeNode &&& defaultA >>> arr2A reifyTriple >>> unlistA)
                                       , this :-> defaultA
                                       ]
   where defaultA =  proc (state, predXml) -> do
@@ -116,6 +117,19 @@ parseObjectsFromChildren s p = (isText >>> getText >>> arr ((Triple (stateSubjec
 
 attachSubject :: Subject -> (Predicate, Object) -> Triple
 attachSubject s (p, o) = Triple s p o
+
+reifyTriple :: forall a. (ArrowXml a, ArrowState GParseState a) => Subject -> a Triple Triples
+reifyTriple node = arr (\(Triple s p o) -> [ Triple s p o
+                                           , Triple node rdfType rdfStatement
+                                           , Triple node rdfSubject s
+                                           , Triple node rdfPredicate p
+                                           , Triple node rdfObject o
+                                           ])
+  where rdfType = (unode . s2b) "rdf:type"
+        rdfStatement = (unode . s2b) "rdf:Statement"
+        rdfSubject = (unode . s2b) "rdf:subject"
+        rdfPredicate = (unode . s2b) "rdf:predicate"
+        rdfObject = (unode . s2b) "rdf:object"
 
 -- |Updates the local state at a given node
 updateState :: forall a. (ArrowXml a, ArrowState GParseState a)
@@ -160,11 +174,15 @@ mkNode :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a X
 mkNode s = choiceA [ hasAttr "rdf:about" :-> (getAttrValue "rdf:about" &&& baseUrl >>> expandURI >>> arr (unode . s2b))
                    , hasAttr "rdf:resource" :-> (getAttrValue "rdf:resource" &&& baseUrl >>> expandURI >>> arr (unode . s2b))
                    , hasAttr "rdf:nodeID" :-> (getAttrValue "rdf:nodeID" >>> arr (bnode . s2b))
-                   , hasAttr "rdf:ID" :-> ((getAttrValue "rdf:ID" >>> arr (\x -> '#':x)) &&& baseUrl >>> expandURI >>> arr (unode . s2b))
+                   , hasAttr "rdf:ID" :-> mkRelativeNode s
                    , this :-> mkBlankNode
                    ]
   where attrToUnode attr = getAttrValue attr >>> arr (unode . s2b)
         baseUrl = constA (case stateBaseUrl s of BaseUrl b -> b2s b)
+
+--mkRelativeNode :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Node
+mkRelativeNode s = (getAttrValue "rdf:ID" >>> arr (\x -> '#':x)) &&& baseUrl >>> expandURI >>> arr (unode . s2b)
+  where baseUrl = constA (case stateBaseUrl s of BaseUrl b -> b2s b)
 
 mkTypedLiteralNode :: LParseState -> FastString -> String -> Node
 mkTypedLiteralNode (LParseState _ (Just lang) _) t content = (lnode (typedL (s2b content) t))
