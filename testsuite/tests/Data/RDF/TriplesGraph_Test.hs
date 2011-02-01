@@ -1,5 +1,9 @@
 module Data.RDF.TriplesGraph_Test where
 
+-- Testing imports
+import Test.Framework (testGroup)
+import Test.Framework.Providers.QuickCheck2 (testProperty)
+
 import Data.RDF
 import Data.RDF.Namespace
 import Data.RDF.TriplesGraph
@@ -11,6 +15,30 @@ import qualified Data.Map as Map
 import Test.QuickCheck
 
 import Control.Monad
+
+tests = [ testGroup "TriplesGraph"
+            [ testProperty "empty"              prop_tg_empty
+            , testProperty "mkRdf_triplesOf"    prop_tg_mkRdf_triplesOf
+            , testProperty "query_match_none"   prop_tg_query_match_none
+            , testProperty "query_matched_spo"  prop_tg_query_matched_spo
+            , testProperty "query_matched_spo_no_dupes" prop_tg_query_matched_spo_no_dupes
+            , testProperty "query_unmatched_spo" prop_tg_query_unmatched_spo
+            , testProperty "query_match_s"      prop_tg_query_match_s
+            , testProperty "query_match_p"      prop_tg_query_match_p
+            , testProperty "query_match_o"      prop_tg_query_match_o
+            , testProperty "query_match_sp"     prop_tg_query_match_sp
+            , testProperty "query_match_so"     prop_tg_query_match_so
+            , testProperty "query_match_po"     prop_tg_query_match_po
+            , testProperty "select_match_none"  prop_tg_select_match_none
+            , testProperty "select_match_s"     prop_tg_select_match_s
+            , testProperty "select_match_p"     prop_tg_select_match_p
+            , testProperty "select_match_o"     prop_tg_select_match_o
+            , testProperty "select_match_sp"    prop_tg_select_match_sp
+            , testProperty "select_match_so"    prop_tg_select_match_so
+            , testProperty "select_match_po"    prop_tg_select_match_po
+            , testProperty "select_match_spo"   prop_tg_select_match_spo
+            ]
+        ]
 
 ----------------------------------------------------
 -- * instances and graph functions for TriplesGraph

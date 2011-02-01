@@ -1,5 +1,9 @@
 module Data.RDF.MGraph_Test where
 
+-- Testing imports
+import Test.Framework (testGroup)
+import Test.Framework.Providers.QuickCheck2 (testProperty)
+
 import Data.RDF
 import Data.RDF.Namespace
 import Data.RDF.MGraph
@@ -8,6 +12,31 @@ import Data.RDF.GraphTestUtils
 import qualified Data.Map as Map
 import Control.Monad
 import Test.QuickCheck
+
+tests = [ testGroup "MGraph"
+            [ testProperty "empty"                      (p_empty _triplesOf _empty)
+            , testProperty "mkRdf_triplesOf"            (p_mkRdf_triplesOf _triplesOf _mkRdf)
+            , testProperty "mkRdf_no_dupes"             (p_mkRdf_no_dupes _triplesOf _mkRdf)
+            , testProperty "query_match_none"           (p_query_match_none _mkRdf)
+            , testProperty "query_matched_spo"          (p_query_matched_spo _triplesOf)
+            , testProperty "query_matched_spo_no_dupes" (p_query_matched_spo_no_dupes _triplesOf _mkRdf)
+            , testProperty "query_unmatched_spo"        (p_query_unmatched_spo _triplesOf)
+            , testProperty "query_match_s"              (p_query_match_s _triplesOf)
+            , testProperty "query_match_p"              (p_query_match_p _triplesOf)
+            , testProperty "query_match_o"              (p_query_match_o _triplesOf)
+            , testProperty "query_match_sp"             (p_query_match_sp _triplesOf)
+            , testProperty "query_match_so"             (p_query_match_so _triplesOf)
+            , testProperty "query_match_po"             (p_query_match_po _triplesOf)
+            , testProperty "match_none"                 (p_select_match_none :: MGraph -> Bool)
+            , testProperty "select_match_s"             (p_select_match_s _triplesOf)
+            , testProperty "select_match_p"             (p_select_match_p _triplesOf)
+            , testProperty "select_match_o"             (p_select_match_o _triplesOf)
+            , testProperty "select_match_sp"            (p_select_match_sp _triplesOf)
+            , testProperty "select_match_so"            (p_select_match_so _triplesOf)
+            , testProperty "select_match_po"            (p_select_match_po _triplesOf)
+            , testProperty "select_match_spo"           (p_select_match_spo _triplesOf)
+            ]
+        ]
 
 ----------------------------------------------------
 -- * instances and graph functions for MGraph
