@@ -92,16 +92,17 @@ parsePredicatesFromAttr s = getAttrl >>> ((getName
 parsePredicatesFromChildren :: forall a. (ArrowXml a, ArrowState GParseState a) => a (LParseState, XmlTree) Triple
 parsePredicatesFromChildren = updateState
                           >>> choiceA [ second (hasAttrValue "rdf:parseType" (== "Literal")) :-> arr2A parseAsLiteralTriple
-                                      , second (hasAttrValue "rdf:parseType" (== "Collection")) :-> arr2A parseAsCollectionTriples
                                       , second (hasAttrValue "rdf:parseType" (== "Resource")) :-> arr2A parseAsResourceTriples
+                                      , second (hasAttrValue "rdf:parseType" (== "Collection")) :-> (listA (defaultA >>> arr id &&& mkBlankNode) >>> mkCollectionTriples >>> unlistA)
                                       , second (hasAttr "rdf:datatype") :-> arr2A getTypedTriple
                                       , second (hasAttr "rdf:resource") :-> arr2A getResourceTriple
                                       , second (hasAttr "rdf:nodeID") :-> arr2A getNodeIdTriple
-                                      , this :-> proc (state, predXml) -> do
-                                                      p <- arr(unode . s2b) <<< getName -< predXml
-                                                      t <- arr2A (\s -> arr2A (parseObjectsFromChildren s)) <<< second (second getChildren) -< (state, (p, predXml))
-                                                      returnA -< t
+                                      , this :-> defaultA
                                       ]
+  where defaultA =  proc (state, predXml) -> do
+                         p <- arr(unode . s2b) <<< getName -< predXml
+                         t <- arr2A (\s -> arr2A (parseObjectsFromChildren s)) <<< second (second getChildren) -< (state, (p, predXml))
+                         returnA -< t
 
 parseObjectsFromChildren :: forall a. (ArrowXml a, ArrowState GParseState a)
                          => LParseState -> Predicate -> a XmlTree Triple
@@ -129,9 +130,15 @@ parseAsLiteralTriple :: forall a. (ArrowXml a, ArrowState GParseState a) => LPar
 parseAsLiteralTriple state = ((getName >>> arr (unode . s2b)) &&& (xshow ( getChildren ) >>> arr (mkTypedLiteralNode state nodeType))) >>> arr (attachSubject (stateSubject state))
   where nodeType = mkFastString (s2b "http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral")
 
--- TODO
-parseAsCollectionTriples :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
-parseAsCollectionTriples state = none
+mkCollectionTriples :: forall a. (ArrowXml a, ArrowState GParseState a) => a [(Triple, Node)] Triples
+mkCollectionTriples = arr (mkCollectionTriples' [])
+  where mkCollectionTriples' [] ((Triple s1 p1 o1, n1):rest) = mkCollectionTriples' [Triple s1 p1 n1] ((Triple s1 p1 o1, n1):rest)
+        mkCollectionTriples' acc ((Triple s1 p1 o1, n1):(t2, n2):rest) = mkCollectionTriples' (Triple n1 headNode o1 : Triple n1 tailNode n2 : acc) ((t2, n2):rest)
+        mkCollectionTriples' acc ((Triple s1 p1 o1, n1):[]) = Triple n1 headNode o1 : Triple n1 tailNode nilNode : acc
+        mkCollectionTriples' acc [] = []
+        headNode = (unode . s2b) "rdf:first"
+        tailNode = (unode . s2b) "rdf:rest"
+        nilNode = (unode . s2b) "rdf:nil"
 
 parseAsResourceTriples :: forall a. (ArrowXml a, ArrowState GParseState a) => LParseState -> a XmlTree Triple
 parseAsResourceTriples state = ((getName >>> arr (unode . s2b)) &&& (getAttrValue "rdf:resource" >>> arr (unode . s2b))) >>> arr (attachSubject (stateSubject state))
