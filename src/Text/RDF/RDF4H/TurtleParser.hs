@@ -285,7 +285,7 @@ t_integer =
 t_double :: GenParser ByteString ParseState ByteString
 t_double =
   do sign <- sign_parser <?> "+-"
-     rest <- try (do { ds <- many1 digit <?> "digit";  char '.'; ds' <- many digit <?> "digit"; e <- t_exponent <?> "exponent"; return (s2b ds `B.snoc` '.' `B.append` s2b ds' `B.append` e) }) <|>
+     rest <- try (do { ds <- many1 digit <?> "digit";  char '.'; ds' <- many digit <?> "digit"; e <- t_exponent <?> "exponent"; return ((s2b ds `B.snoc` '.') `B.append` s2b ds' `B.append` e) }) <|>
              try (do { char '.'; ds <- many1 digit <?> "digit"; e <- t_exponent <?> "exponent"; return ('.' `B.cons` s2b ds `B.append` e) }) <|>
              try (do { ds <- many1 digit <?> "digit"; e <- t_exponent <?> "exponent"; return (s2b ds `B.append` e) })
      return $! s2b sign `B.append` rest
