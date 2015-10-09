@@ -65,7 +65,7 @@ library
                  , Text.RDF.RDF4H.Interact
   hs-source-dirs:  src
   extensions:      BangPatterns
-  ghc-options:     -O2 -Wall -fglasgow-exts -fno-warn-name-shadowing -fno-warn-missing-signatures -fno-warn-unused-do-bind
+  ghc-options:     -O2 -Wall -fno-warn-name-shadowing -fno-warn-missing-signatures -fno-warn-unused-do-bind
 
 executable rdf4h
   main-is:         Rdf4hParseMain.hs 
@@ -83,7 +83,7 @@ executable rdf4h
                  , MissingH >= 1.0.0 && < 1.4
   hs-source-dirs:  src
   extensions:      BangPatterns
-  ghc-options:     -O2 -Wall -fglasgow-exts -fno-warn-name-shadowing -fno-warn-missing-signatures -fno-warn-unused-do-bind
+  ghc-options:     -O2 -Wall -fno-warn-name-shadowing -fno-warn-missing-signatures -fno-warn-unused-do-bind
 
 --executable rdf4h_query
 --  main-is:         Rdf4hQueryMain.hs
@@ -93,7 +93,7 @@ executable rdf4h
 --    build-depends: base < 3
 --  hs-source-dirs:  .
 --  extensions:      BangPatterns
---  ghc-options:     -O2 -Wall -fglasgow-exts -fno-warn-name-shadowing -fno-warn-missing-signatures
+--  ghc-options:     -O2 -Wall -fno-warn-name-shadowing -fno-warn-missing-signatures
 
 executable test-rdf4h
   main-is:         Test.hs
