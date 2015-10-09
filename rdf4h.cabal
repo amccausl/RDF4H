@@ -34,6 +34,10 @@ flag hpc
   description: Use HPC for tests
   default:     True
 
+flag network-uri
+ Description: Get Network.URI from the network-uri package
+ Default: True
+
 library
   exposed-modules: Data.RDF
                  , Data.RDF.Namespace
@@ -48,11 +52,14 @@ library
     build-depends: base >= 3, bytestring, directory, containers
   else
     build-depends: base < 3
+  if flag(network-uri)
+    build-depends: network-uri < 2.7
+  else
+    build-depends: network >= 2.2.0.0 && < 2.6
   build-depends:   parsec >= 3 && < 3.2
-                 , network >= 2.2.0.0 && < 2.3
-                 , HTTP >= 4000.0.0 && < 4000.2
-                 , hxt >= 9.0.0 && < 9.1
-                 , MissingH >= 1.0.0 && < 1.2
+                 , HTTP >= 4000.0.0 && < 4000.3
+                 , hxt >= 9.0.0 && < 9.4
+                 , MissingH >= 1.0.0 && < 1.4
   other-modules:   Data.RDF.Utils
                  , Text.RDF.RDF4H.ParserUtils
                  , Text.RDF.RDF4H.Interact
@@ -66,11 +73,14 @@ executable rdf4h
     build-depends: base >= 3, bytestring
   else
     build-depends: base < 3
+  if flag(network-uri)
+    build-depends: network-uri < 2.7
+  else
+    build-depends: network >= 2.2.0.0 && < 2.6
   build-depends:   parsec >= 3 && < 3.2
-                 , network >= 2.2.0.0 && < 2.3
-                 , HTTP >= 4000.0.0 && < 4000.2
-                 , hxt >= 9.0.0 && < 9.1
-                 , MissingH >= 1.0.0 && < 1.2
+                 , HTTP >= 4000.0.0 && < 4000.3
+                 , hxt >= 9.0.0 && < 9.4
+                 , MissingH >= 1.0.0 && < 1.4
   hs-source-dirs:  src
   extensions:      BangPatterns
   ghc-options:     -O2 -Wall -fglasgow-exts -fno-warn-name-shadowing -fno-warn-missing-signatures -fno-warn-unused-do-bind
